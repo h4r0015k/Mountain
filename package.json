@@ -1,0 +1,19 @@
+{
+  "name": "mountain",
+  "version": "1.0.0",
+  "description": "A free, local-first open source password manager.",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "typescript": "^7.0.2",
+    "vitest": "^1.6.1"
+  }
+}

@@ -12,7 +12,7 @@ A free, local-first open source password manager.
 ## Roadmap & Progress
   - [x] Concept & architecture planning
   - [x] Initial post: [Building a Free Open-Source Password Manager](https://dev.to/h4r0015k/building-a-free-open-source-password-manager-1ol8)
-  - [ ] Core crypto module (Key derivation + AES encryption)
+  - [x] Core crypto module (BIP-39 mnemonic identity, PBKDF2 key derivation, AES-256-GCM authenticated encryption, CSPRNG generator)
   - [ ] Local vault storage (IndexedDB)
   - [ ] Google Drive sync integration
   - [ ] UI / Web App

@@ -32,13 +32,8 @@ describe("Mountain BIP-39 Mnemonic Identity", () => {
     // 2. Too short (only 5 words)
     expect(validateMnemonic("abandon ability able about above")).toBe(false);
 
-    // 3. Typo in checksum (changing one word breaks SHA-256 checksum)
-    const validPhrase = generateMnemonic(12);
-    const words = validPhrase.split(" ");
-    words[words.length - 1] = words[words.length - 1] === "zoo" ? "zero" : "zoo";
-    const corruptedPhrase = words.join(" ");
-
-    expect(validateMnemonic(corruptedPhrase)).toBe(false);
+    // 3. Typo in checksum (deterministic invalid checksum test vector)
+    expect(validateMnemonic("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon ability")).toBe(false);
   });
 
   it("deterministically converts a mnemonic into a 512-bit (64-byte) seed", async () => {

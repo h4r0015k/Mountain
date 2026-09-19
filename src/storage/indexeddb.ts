@@ -106,3 +106,21 @@ export async function deleteVaultSnapshot(vaultId: string): Promise<void> {
     tx.oncomplete = () => db.close();
   });
 }
+
+/**
+ * Lists all stored vault snapshots in local IndexedDB.
+ */
+export async function listVaultSnapshots(): Promise<VaultSnapshot[]> {
+  const db = await openVaultDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+
+    const request = store.getAll();
+
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(new Error(`Failed to list vault snapshots: ${request.error?.message}`));
+    tx.oncomplete = () => db.close();
+  });
+}

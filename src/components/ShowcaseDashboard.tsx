@@ -17,7 +17,9 @@ import {
   Database,
   Smartphone,
   RefreshCw,
-  FolderLock
+  FolderLock,
+  Menu,
+  X
 } from 'lucide-react';
 
 interface Props {
@@ -34,6 +36,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
   const [indexedDbAvailable, setIndexedDbAvailable] = useState<boolean | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setWebCryptoAvailable(typeof window !== 'undefined' && !!window.crypto?.subtle);
@@ -82,20 +85,20 @@ export const ShowcaseDashboard: React.FC<Props> = ({
       {/* Top Hairline Header */}
       <header className="border-b border-zinc-800/80 bg-[#09090b]/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          {/* Logo & Version */}
-          <div className="flex items-center space-x-3">
-            <div className="w-7 h-7 rounded-md bg-zinc-900 border border-zinc-700 flex items-center justify-center">
+          {/* Logo & Brand */}
+          <div className="flex items-center space-x-2.5 shrink-0">
+            <div className="w-7 h-7 rounded-md bg-zinc-900 border border-zinc-700 flex items-center justify-center shrink-0">
               <Shield className="w-3.5 h-3.5 text-zinc-200" />
             </div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-sm tracking-tight text-white">Mountain</span>
-              <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60">
+              <span className="hidden sm:inline-block text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60">
                 Free & Open Source
               </span>
             </div>
           </div>
 
-          {/* Navigation Links */}
+          {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center space-x-1 text-xs text-zinc-400 font-medium">
             <a
               href="#how-it-works"
@@ -120,9 +123,12 @@ export const ShowcaseDashboard: React.FC<Props> = ({
           </nav>
 
           {/* Right Action Cluster */}
-          <div className="flex items-center gap-2.5">
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-400 font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="flex items-center gap-2">
+            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-400 font-mono">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
               <span>Runs on your device</span>
             </div>
 
@@ -130,7 +136,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               href="https://github.com/h4r0015k/Mountain"
               target="_blank"
               rel="noreferrer"
-              className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-colors"
+              className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-colors"
               title="GitHub Repository"
             >
               <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -140,7 +146,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
 
             <button
               disabled
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 font-medium text-xs cursor-not-allowed select-none"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 font-medium text-xs cursor-not-allowed select-none"
             >
               <Lock className="w-3.5 h-3.5 text-zinc-600" />
               <span>Launch Tool</span>
@@ -148,32 +154,85 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                 Soon
               </span>
             </button>
+
+            {/* Mobile Hamburger Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white transition-colors"
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-zinc-800/80 bg-[#09090b]/98 backdrop-blur-lg px-4 py-3 space-y-1 animate-fade-in">
+            <a
+              href="#how-it-works"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 transition-colors"
+            >
+              How It Works
+            </a>
+            <a
+              href="#technical-section"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 transition-colors"
+            >
+              Technical Breakdown
+            </a>
+            <a
+              href="https://github.com/h4r0015k/Mountain"
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 transition-colors"
+            >
+              <span>GitHub Repository</span>
+              <ExternalLink className="w-3.5 h-3.5 text-zinc-500" />
+            </a>
+
+            <div className="pt-3 pb-1 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400 font-mono">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>Runs on your device</span>
+              </div>
+              <span className="text-zinc-500 text-[11px]">Vault Coming Soon</span>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section (Product / Layman Focus) */}
-      <section className="py-20 sm:py-28 px-4 sm:px-6 border-b border-zinc-800/80 relative">
+      <section className="py-20 sm:py-28 px-4 sm:px-6 border-b border-zinc-800/80 relative overflow-hidden">
+        {/* Soft Ambient Breathing Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[300px] bg-gradient-to-tr from-zinc-800/20 via-zinc-700/10 to-transparent rounded-full blur-[90px] pointer-events-none -z-10 animate-pulse-slow" />
+
         <div className="max-w-4xl mx-auto">
           {/* Status Badge */}
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400 mb-6">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400 mb-6 animate-fade-in">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             <span>LOCAL-FIRST // 100% PRIVATE // OPEN SOURCE</span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight mb-5">
-            A password manager that belongs to you,
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.1] mb-5 animate-fade-in-delayed-1">
+            Your passwords.
             <br />
-            <span className="text-zinc-400">not a company.</span>
+            <span className="text-zinc-400">Only on your devices.</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-zinc-400 max-w-2xl leading-relaxed mb-8">
-            Most password managers store your passwords on their company servers. Mountain takes a different approach: it runs directly on your computer or phone, locks everything with your own private keys, and never sends your data to any third-party database.
+          <p className="text-sm sm:text-base text-zinc-400 max-w-2xl leading-relaxed mb-8 animate-fade-in-delayed-2">
+            An open-source, local-first password manager. Encrypted client-side, backed up to your personal Google Drive, and completely free of company-hosted databases.
           </p>
 
           {/* Action Button Group */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="flex flex-wrap items-center gap-3 mb-6 animate-fade-in-delayed-3">
             <button
               disabled
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 font-medium text-xs sm:text-sm cursor-not-allowed select-none shadow-sm"
@@ -207,31 +266,31 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             </a>
           </div>
 
-          <div className="text-[11px] font-mono text-zinc-500">
+          <div className="text-[11px] font-mono text-zinc-500 animate-fade-in-delayed-3">
             • Free forever • No subscriptions • Zero tracking • No account creation needed
           </div>
 
           {/* Product Pillars Metric Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-14">
-            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-14 animate-fade-in-delayed-3">
+            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200">
               <div className="text-[11px] font-mono text-zinc-500 uppercase">Privacy</div>
               <div className="text-base font-semibold text-zinc-100 mt-1">100% Local</div>
               <div className="text-[11px] text-zinc-500 mt-0.5">Lives on your device</div>
             </div>
 
-            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80">
+            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200">
               <div className="text-[11px] font-mono text-zinc-500 uppercase">Accounts</div>
               <div className="text-base font-semibold text-zinc-100 mt-1">Zero Signups</div>
               <div className="text-[11px] text-zinc-500 mt-0.5">No email or login needed</div>
             </div>
 
-            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80">
+            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200">
               <div className="text-[11px] font-mono text-zinc-500 uppercase">Recovery</div>
               <div className="text-base font-semibold text-zinc-100 mt-1">12-Word Key</div>
               <div className="text-[11px] text-zinc-500 mt-0.5">Paper backup you control</div>
             </div>
 
-            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80">
+            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200">
               <div className="text-[11px] font-mono text-zinc-500 uppercase">Cloud Sync</div>
               <div className="text-base font-semibold text-zinc-100 mt-1">Personal Drive</div>
               <div className="text-[11px] text-zinc-500 mt-0.5">Your private Google Drive</div>
@@ -256,8 +315,8 @@ export const ShowcaseDashboard: React.FC<Props> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-5 rounded-xl bg-zinc-900/40 border border-zinc-800">
-              <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3">
+            <div className="group p-5 rounded-xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all duration-300 hover:-translate-y-0.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                 <HardDrive className="w-4 h-4 text-zinc-200" />
               </div>
               <h3 className="text-sm font-semibold text-white mb-1.5">No Company Servers</h3>
@@ -266,8 +325,8 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               </p>
             </div>
 
-            <div className="p-5 rounded-xl bg-zinc-900/40 border border-zinc-800">
-              <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3">
+            <div className="group p-5 rounded-xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all duration-300 hover:-translate-y-0.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                 <KeyRound className="w-4 h-4 text-zinc-200" />
               </div>
               <h3 className="text-sm font-semibold text-white mb-1.5">A 12-Word Paper Key</h3>
@@ -276,8 +335,8 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               </p>
             </div>
 
-            <div className="p-5 rounded-xl bg-zinc-900/40 border border-zinc-800">
-              <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3">
+            <div className="group p-5 rounded-xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all duration-300 hover:-translate-y-0.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                 <Smartphone className="w-4 h-4 text-zinc-200" />
               </div>
               <h3 className="text-sm font-semibold text-white mb-1.5">Fast Daily Unlock</h3>
@@ -286,8 +345,8 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               </p>
             </div>
 
-            <div className="p-5 rounded-xl bg-zinc-900/40 border border-zinc-800">
-              <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3">
+            <div className="group p-5 rounded-xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all duration-300 hover:-translate-y-0.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                 <FolderLock className="w-4 h-4 text-zinc-200" />
               </div>
               <h3 className="text-sm font-semibold text-white mb-1.5">Backups on Your Own Google Drive</h3>

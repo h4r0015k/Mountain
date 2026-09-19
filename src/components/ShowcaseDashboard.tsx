@@ -22,6 +22,86 @@ import {
   X
 } from 'lucide-react';
 
+const MATRIX_GLYPHS = '0123456789ABCDEF$#@%&*<>{}[]/?~!=+';
+
+const ROTATING_ONE_LINERS = [
+  'Only on your devices.',
+  'Zero corporate servers.',
+  'Your 12-word paper key.',
+  'Zero accounts to breach.',
+  'Encrypted at your edge.',
+  '100% private. Free forever.'
+];
+
+interface MatrixScrambleProps {
+  targetText: string;
+  className?: string;
+}
+
+const MatrixScrambleText: React.FC<MatrixScrambleProps> = ({
+  targetText,
+  className = ''
+}) => {
+  const [displayText, setDisplayText] = useState(targetText);
+  const [progressIndex, setProgressIndex] = useState(0);
+  const [isScrambling, setIsScrambling] = useState(true);
+
+  useEffect(() => {
+    setIsScrambling(true);
+    let step = 0;
+    const totalSteps = targetText.length;
+
+    const interval = setInterval(() => {
+      setDisplayText(() => {
+        return targetText
+          .split('')
+          .map((char, idx) => {
+            if (char === ' ') return ' ';
+            if (idx < Math.floor(step)) {
+              return targetText[idx];
+            }
+            return MATRIX_GLYPHS[Math.floor(Math.random() * MATRIX_GLYPHS.length)];
+          })
+          .join('');
+      });
+
+      setProgressIndex(Math.floor(step));
+
+      if (step >= totalSteps) {
+        clearInterval(interval);
+        setDisplayText(targetText);
+        setIsScrambling(false);
+      }
+
+      step += 0.8;
+    }, 30);
+
+    return () => clearInterval(interval);
+  }, [targetText]);
+
+  return (
+    <span className={`inline-block ${className}`}>
+      {displayText.split('').map((char, idx) => {
+        const isResolved = !isScrambling || idx < progressIndex;
+        const isLeadingChar = isScrambling && idx === progressIndex;
+
+        let style = 'text-zinc-400 transition-colors duration-100';
+        if (isLeadingChar) {
+          style = 'text-emerald-300 font-bold drop-shadow-[0_0_8px_rgba(52,211,153,0.9)]';
+        } else if (!isResolved) {
+          style = 'text-emerald-500/70 select-none';
+        }
+
+        return (
+          <span key={idx} className={style}>
+            {char}
+          </span>
+        );
+      })}
+    </span>
+  );
+};
+
 interface Props {
   hasExistingVault: boolean;
   vaultItemCount?: number;
@@ -31,12 +111,23 @@ export const ShowcaseDashboard: React.FC<Props> = ({
   hasExistingVault,
   vaultItemCount = 0,
 }) => {
+  // Rotating Hero One-Liners
+  const [phraseIndex, setPhraseIndex] = useState(0);
+
   // Diagnostics & In-Browser Self-Test State
   const [webCryptoAvailable, setWebCryptoAvailable] = useState<boolean | null>(null);
   const [indexedDbAvailable, setIndexedDbAvailable] = useState<boolean | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhraseIndex((prev) => (prev + 1) % ROTATING_ONE_LINERS.length);
+    }, 3800);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     setWebCryptoAvailable(typeof window !== 'undefined' && !!window.crypto?.subtle);
@@ -222,9 +313,13 @@ export const ShowcaseDashboard: React.FC<Props> = ({
 
           {/* Main Headline */}
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.1] mb-5 animate-fade-in-delayed-1">
-            Your passwords.
-            <br />
-            <span className="text-zinc-400">Only on your devices.</span>
+            <div>Your passwords.</div>
+            <div className="mt-1.5 sm:mt-2 min-h-[3.6rem] sm:min-h-[2.5rem] md:min-h-[3rem] lg:min-h-[3.8rem] flex items-center">
+              <MatrixScrambleText
+                targetText={ROTATING_ONE_LINERS[phraseIndex]}
+                className="font-mono text-xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight"
+              />
+            </div>
           </h1>
 
           <p className="text-sm sm:text-base text-zinc-400 max-w-2xl leading-relaxed mb-8 animate-fade-in-delayed-2">

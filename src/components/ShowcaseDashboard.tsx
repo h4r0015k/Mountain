@@ -102,6 +102,23 @@ const MatrixScrambleText: React.FC<MatrixScrambleProps> = ({
   );
 };
 
+export const MountainIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg
+    className={className}
+    viewBox="0 0 32 32"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Secondary Peak (Right) */}
+    <path d="M17 14.5 L20.5 9.5 L29 25 H23" />
+    {/* Main Mountain with Keyhole Cutout Base */}
+    <path d="M11.5 25 H3 L13.5 5 L23 25 H15.5 L14.7 20.8 A 2.2 2.2 0 1 0 12.3 20.8 L11.5 25 Z" />
+  </svg>
+);
+
 interface Props {
   hasExistingVault: boolean;
   vaultItemCount?: number;
@@ -179,7 +196,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
           {/* Logo & Brand */}
           <div className="flex items-center space-x-2.5 shrink-0">
             <div className="w-7 h-7 rounded-md bg-zinc-900 border border-zinc-700 flex items-center justify-center shrink-0">
-              <Shield className="w-3.5 h-3.5 text-zinc-200" />
+              <MountainIcon className="w-4 h-4 text-zinc-200" />
             </div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-sm tracking-tight text-white">Mountain</span>
@@ -622,7 +639,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             <div>
               <div className="flex items-center space-x-2 mb-2">
                 <div className="w-6 h-6 rounded bg-zinc-900 border border-zinc-700 flex items-center justify-center">
-                  <Shield className="w-3 h-3 text-zinc-200" />
+                  <MountainIcon className="w-3.5 h-3.5 text-zinc-200" />
                 </div>
                 <span className="font-semibold text-sm text-white">Mountain</span>
               </div>

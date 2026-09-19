@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke="#f4f4f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Secondary Peak (Right) -->
+  <path d="M17 14.5 L20.5 9.5 L29 25 H23" />
+  <!-- Main Mountain with Keyhole Cutout Base -->
+  <path d="M11.5 25 H3 L13.5 5 L23 25 H15.5 L14.7 20.8 A 2.2 2.2 0 1 0 12.3 20.8 L11.5 25 Z" />
+</svg>

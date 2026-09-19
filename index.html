@@ -2,15 +2,80 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/mountain.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#020617" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/svg+xml" href="./mountain.svg" />
+    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+
+    <!-- Primary Meta Tags -->
+    <title>Mountain — Local-First, Zero-Knowledge Password Manager</title>
+    <meta name="title" content="Mountain — Local-First, Zero-Knowledge Password Manager" />
+    <meta name="description" content="Mountain is a free, open-source password manager that encrypts everything on your device. No servers, no accounts, no tracking. AES-256-GCM encryption with a 12-word paper key you control." />
+    <meta name="keywords" content="password manager, local-first, zero-knowledge, open source, AES-256-GCM, BIP-39, offline, encrypted, privacy, free, no cloud, client-side encryption" />
+    <meta name="author" content="h4r0015k" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#09090b" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://h4r0015k.github.io/Mountain/" />
+    <meta property="og:title" content="Mountain — Local-First, Zero-Knowledge Password Manager" />
+    <meta property="og:description" content="Your passwords never leave your device. Free, open-source, AES-256-GCM encrypted password manager with a 12-word paper key. No accounts, no servers." />
+    <meta property="og:image" content="https://h4r0015k.github.io/Mountain/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:site_name" content="Mountain" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary" />
+    <meta property="twitter:url" content="https://h4r0015k.github.io/Mountain/" />
+    <meta property="twitter:title" content="Mountain — Local-First Password Manager" />
+    <meta property="twitter:description" content="Your passwords never leave your device. Free, open-source, AES-256-GCM encrypted. No accounts, no servers, no tracking." />
+    <meta property="twitter:image" content="https://h4r0015k.github.io/Mountain/icon-512.png" />
+
+    <!-- PWA & Mobile -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Mountain — Local-First Password Manager</title>
+    <meta name="apple-mobile-web-app-title" content="Mountain" />
+    <meta name="application-name" content="Mountain" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://h4r0015k.github.io/Mountain/" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Mountain",
+      "description": "A free, open-source, local-first password manager. AES-256-GCM encrypted, zero-knowledge, with a 12-word BIP-39 paper key. No servers, no accounts.",
+      "url": "https://h4r0015k.github.io/Mountain/",
+      "applicationCategory": "SecurityApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "h4r0015k",
+        "url": "https://github.com/h4r0015k"
+      },
+      "license": "https://github.com/h4r0015k/Mountain/blob/main/LICENSE",
+      "isAccessibleForFree": true,
+      "softwareVersion": "1.0.0",
+      "screenshot": "https://h4r0015k.github.io/Mountain/icon-512.png"
+    }
+    </script>
   </head>
-  <body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
+  <body class="bg-[#09090b] text-zinc-100 min-h-screen antialiased selection:bg-zinc-800 selection:text-white">
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>

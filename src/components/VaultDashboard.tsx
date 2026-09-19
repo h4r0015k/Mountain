@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { VaultItem, VaultSnapshot, VaultItemType, LoginFields } from '../models/vault.js';
 import { encryptVaultRecord } from '../crypto/vault.js';
 import { saveVaultSnapshot } from '../storage/indexeddb.js';
+import { generateTOTP } from '../crypto/totp.js';
 import { PasswordGeneratorModal } from './PasswordGeneratorModal';
+import { MountainIcon } from './ShowcaseDashboard.js';
 import {
   Lock,
   Plus,
@@ -18,7 +20,11 @@ import {
   Trash2,
   ExternalLink,
   Sparkles,
-  Database
+  Database,
+  KeyRound,
+  X,
+  Pencil,
+  ShieldCheck
 } from 'lucide-react';
 
 export interface DecryptedRecord {
@@ -34,6 +40,180 @@ interface Props {
   onRefreshItems: () => Promise<void>;
 }
 
+/**
+ * Enhanced TOTP Display Component with decay countdown ring / progress bar
+ */
+const TotpDisplay: React.FC<{
+  code: string;
+  secondsRemaining: number;
+  onCopy: (text: string) => void;
+  copied: boolean;
+}> = ({ code, secondsRemaining, onCopy, copied }) => {
+  const progressPercent = (secondsRemaining / 30) * 100;
+  const isUrgent = secondsRemaining <= 5;
+  const isWarning = secondsRemaining <= 10 && secondsRemaining > 5;
+
+  const colorStyle = isUrgent
+    ? 'border-rose-500/50 bg-rose-950/20'
+    : isWarning
+    ? 'border-amber-500/50 bg-amber-950/20'
+    : 'border-emerald-500/50 bg-emerald-950/20';
+
+  const barColor = isUrgent ? 'bg-rose-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-400';
+  const badgeColor = isUrgent ? 'text-rose-400' : isWarning ? 'text-amber-400' : 'text-emerald-400';
+
+  return (
+    <div className={`p-4 rounded-xl border ${colorStyle} transition-all space-y-3`}>
+      <div className="flex items-center justify-between">
+        <div className="font-mono text-2xl sm:text-3xl font-extrabold tracking-widest text-white drop-shadow-xs select-all">
+          <span>{code.slice(0, 3)}</span>
+          <span className="mx-2 text-zinc-600 font-normal">·</span>
+          <span>{code.slice(3)}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className={`font-mono text-xs font-semibold px-2 py-1 rounded-lg bg-zinc-900/80 border border-zinc-800 ${badgeColor}`}>
+            {secondsRemaining}s
+          </span>
+          <button
+            onClick={() => onCopy(code)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700/80 text-xs font-medium text-zinc-200 transition active:scale-95"
+            title="Copy 6-digit code"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-emerald-400">Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Decay countdown bar */}
+      <div className="w-full bg-zinc-900/80 h-1.5 rounded-full overflow-hidden">
+        <div
+          className={`h-full transition-all duration-1000 ease-linear rounded-full ${barColor}`}
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Safely extracts clean hostname from standard, partial, or protocol-less URL strings.
+ */
+export function extractDomain(urlStr?: string): string | null {
+  if (!urlStr) return null;
+  let clean = urlStr.trim();
+  if (!clean) return null;
+  if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+    clean = 'https://' + clean;
+  }
+  try {
+    const parsed = new URL(clean);
+    if (!parsed.hostname || !parsed.hostname.includes('.')) return null;
+    return parsed.hostname.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
+export const getTypeIcon = (type: VaultItemType, className = 'w-4 h-4 text-zinc-200') => {
+  switch (type) {
+    case 'LOGIN':
+      return <Key className={className} />;
+    case 'SECURE_NOTE':
+      return <FileText className={className} />;
+    case 'CARD':
+      return <CreditCard className={className} />;
+    case 'API_KEY':
+      return <Terminal className={className} />;
+    default:
+      return <Key className={className} />;
+  }
+};
+
+/**
+ * Renders website favicon dynamically if URL is provided, falling back across Google S2, DuckDuckGo, and Category icon.
+ */
+export const FaviconBadge: React.FC<{
+  url?: string;
+  type: VaultItemType;
+  className?: string;
+  imgClassName?: string;
+  size?: 'sm' | 'md' | 'lg';
+}> = ({ url, type, className = '', imgClassName, size = 'md' }) => {
+  const [srcIndex, setSrcIndex] = useState(0);
+  const domain = useMemo(() => extractDomain(url), [url]);
+
+  useEffect(() => {
+    setSrcIndex(0);
+  }, [domain]);
+
+  const sizeDimensions =
+    size === 'lg'
+      ? 'w-12 h-12 rounded-2xl'
+      : size === 'sm'
+      ? 'w-7 h-7 rounded-lg'
+      : 'w-10 h-10 rounded-xl';
+
+  const defaultImgSize =
+    size === 'lg'
+      ? 'w-7 h-7'
+      : size === 'sm'
+      ? 'w-4 h-4'
+      : 'w-5 h-5';
+
+  const effectiveImgClass = imgClassName || defaultImgSize;
+
+  if (!domain) {
+    return (
+      <div
+        className={`${sizeDimensions} bg-zinc-900 border border-neutral-800 flex items-center justify-center flex-shrink-0 text-zinc-300 ${className}`}
+      >
+        {getTypeIcon(type, size === 'lg' ? 'w-5 h-5 text-zinc-200' : 'w-4 h-4 text-zinc-200')}
+      </div>
+    );
+  }
+
+  // Favicon providers: Google S2 (128px high-res) -> DuckDuckGo ip3 (.ico) -> Category Icon
+  const sources = [
+    `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`,
+    `https://icons.duckduckgo.com/ip3/${encodeURIComponent(domain)}.ico`,
+  ];
+
+  if (srcIndex >= sources.length) {
+    return (
+      <div
+        className={`${sizeDimensions} bg-zinc-900 border border-neutral-800 flex items-center justify-center flex-shrink-0 text-zinc-300 ${className}`}
+      >
+        {getTypeIcon(type, size === 'lg' ? 'w-5 h-5 text-zinc-200' : 'w-4 h-4 text-zinc-200')}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`${sizeDimensions} bg-white flex items-center justify-center flex-shrink-0 overflow-hidden shadow-xs ring-1 ring-white/20 transition-transform ${className}`}
+    >
+      <img
+        src={sources[srcIndex]}
+        alt=""
+        className={`${effectiveImgClass} object-contain rounded-xs`}
+        onError={() => setSrcIndex((i) => i + 1)}
+        loading="lazy"
+      />
+    </div>
+  );
+};
+
 export const VaultDashboard: React.FC<Props> = ({
   snapshot,
   activeKey,
@@ -42,20 +222,89 @@ export const VaultDashboard: React.FC<Props> = ({
   onRefreshItems,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<'ALL' | VaultItemType>('ALL');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddDrawer, setShowAddDrawer] = useState(false);
+  const [viewingRecord, setViewingRecord] = useState<DecryptedRecord | null>(null);
   const [showGenerator, setShowGenerator] = useState(false);
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Form state
+  // Form state for new/editing record
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [newItemType, setNewItemType] = useState<VaultItemType>('LOGIN');
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemUsername, setNewItemUsername] = useState('');
   const [newItemPassword, setNewItemPassword] = useState('');
   const [newItemUrl, setNewItemUrl] = useState('');
+  const [newItemTotpSecret, setNewItemTotpSecret] = useState('');
   const [newItemNotes, setNewItemNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Live rotating 2FA TOTP codes
+  const [totpCodes, setTotpCodes] = useState<Record<string, { code: string; secondsRemaining: number }>>({});
+
+  const openAddDrawer = () => {
+    setEditingItemId(null);
+    setNewItemType('LOGIN');
+    setNewItemTitle('');
+    setNewItemUsername('');
+    setNewItemPassword('');
+    setNewItemUrl('');
+    setNewItemTotpSecret('');
+    setNewItemNotes('');
+    setShowAddDrawer(true);
+  };
+
+  const openEditDrawer = (record: DecryptedRecord) => {
+    setEditingItemId(record.item.id);
+    setNewItemType(record.item.type);
+    setNewItemTitle(record.item.title || '');
+    setNewItemUsername(record.secret?.username || '');
+    setNewItemPassword(record.secret?.password || '');
+    setNewItemUrl(record.secret?.url || '');
+    setNewItemTotpSecret(record.secret?.totpSecret || '');
+    setNewItemNotes(record.secret?.notes || '');
+    setShowAddDrawer(true);
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const updateAllTotp = async () => {
+      const updated: Record<string, { code: string; secondsRemaining: number }> = {};
+      for (const { item, secret } of items) {
+        if (secret?.totpSecret) {
+          try {
+            const res = await generateTOTP(secret.totpSecret);
+            if (isMounted) {
+              updated[item.id] = res;
+            }
+          } catch {
+            // Invalid key ignored
+          }
+        }
+      }
+      if (isMounted) {
+        setTotpCodes(updated);
+      }
+    };
+
+    updateAllTotp();
+    const timer = setInterval(updateAllTotp, 1000);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [items]);
+
+  // Keep viewingRecord in sync when items update
+  useEffect(() => {
+    if (viewingRecord) {
+      const updated = items.find((it) => it.item.id === viewingRecord.item.id);
+      if (updated) {
+        setViewingRecord(updated);
+      }
+    }
+  }, [items]);
 
   const togglePasswordVisibility = (id: string) => {
     setRevealedPasswords((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -79,37 +328,59 @@ export const VaultDashboard: React.FC<Props> = ({
         username: newItemUsername,
         password: newItemPassword,
         url: newItemUrl || undefined,
+        totpSecret: newItemTotpSecret.trim() || undefined,
         notes: newItemNotes || undefined,
       };
 
       const encryptedData = await encryptVaultRecord(secretPayload, activeKey);
 
-      const newItem: VaultItem = {
-        id: crypto.randomUUID(),
-        type: newItemType,
-        title: newItemTitle.trim(),
-        favorite: false,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        encryptedData,
-      };
+      let updatedItems: VaultItem[];
+
+      if (editingItemId) {
+        // Edit existing record
+        updatedItems = snapshot.items.map((it) =>
+          it.id === editingItemId
+            ? {
+                ...it,
+                type: newItemType,
+                title: newItemTitle.trim(),
+                updatedAt: Date.now(),
+                encryptedData,
+              }
+            : it
+        );
+      } else {
+        // Create new record
+        const newItem: VaultItem = {
+          id: crypto.randomUUID(),
+          type: newItemType,
+          title: newItemTitle.trim(),
+          favorite: false,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          encryptedData,
+        };
+        updatedItems = [...snapshot.items, newItem];
+      }
 
       const updatedSnapshot: VaultSnapshot = {
         ...snapshot,
         updatedAt: Date.now(),
-        items: [...snapshot.items, newItem],
+        items: updatedItems,
       };
 
       await saveVaultSnapshot(updatedSnapshot);
       await onRefreshItems();
 
-      // Reset
+      // Reset form state and close drawer
+      setEditingItemId(null);
       setNewItemTitle('');
       setNewItemUsername('');
       setNewItemPassword('');
       setNewItemUrl('');
+      setNewItemTotpSecret('');
       setNewItemNotes('');
-      setShowAddModal(false);
+      setShowAddDrawer(false);
     } catch (err: any) {
       alert(`Save failed: ${err.message}`);
     } finally {
@@ -129,6 +400,9 @@ export const VaultDashboard: React.FC<Props> = ({
 
       await saveVaultSnapshot(updatedSnapshot);
       await onRefreshItems();
+      if (viewingRecord?.item.id === itemId) {
+        setViewingRecord(null);
+      }
     } catch (err: any) {
       alert(`Delete failed: ${err.message}`);
     }
@@ -136,24 +410,12 @@ export const VaultDashboard: React.FC<Props> = ({
 
   const filteredItems = items.filter((record) => {
     const query = searchQuery.toLowerCase();
-    const matchesSearch =
+    return (
       record.item.title.toLowerCase().includes(query) ||
-      (record.secret.username && record.secret.username.toLowerCase().includes(query)) ||
-      (record.secret.url && record.secret.url.toLowerCase().includes(query));
-
-    const matchesType = selectedType === 'ALL' || record.item.type === selectedType;
-
-    return matchesSearch && matchesType;
+      (record.secret?.username && record.secret.username.toLowerCase().includes(query)) ||
+      (record.secret?.url && record.secret.url.toLowerCase().includes(query))
+    );
   });
-
-  const getTypeIcon = (type: VaultItemType) => {
-    switch (type) {
-      case 'LOGIN': return <Key className="w-3.5 h-3.5 text-zinc-300" />;
-      case 'SECURE_NOTE': return <FileText className="w-3.5 h-3.5 text-zinc-300" />;
-      case 'CARD': return <CreditCard className="w-3.5 h-3.5 text-zinc-300" />;
-      case 'API_KEY': return <Terminal className="w-3.5 h-3.5 text-zinc-300" />;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#08090c] text-zinc-100 flex flex-col font-sans selection:bg-zinc-700 selection:text-white">
@@ -161,21 +423,21 @@ export const VaultDashboard: React.FC<Props> = ({
       <header className="border-b border-neutral-800/80 bg-[#0c0d12]/90 backdrop-blur-md sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-7 h-7 rounded-lg bg-zinc-100 text-black flex items-center justify-center font-black text-xs">
-              ▲
+            <div className="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-100 p-1">
+              <MountainIcon className="w-full h-full" />
             </div>
             <div className="flex items-center space-x-2">
               <span className="font-semibold text-sm tracking-tight text-white">Mountain</span>
               <div className="hidden sm:flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-neutral-800 text-[10px] text-zinc-400 font-mono">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>AES-GCM Local</span>
+                <span>AES-256-GCM Local</span>
               </div>
             </div>
           </div>
 
           {/* Sync status indicator */}
           <div className="flex items-center space-x-1.5 py-1 px-2.5 rounded-md bg-zinc-900/90 border border-neutral-800 text-[11px] text-zinc-400 font-mono">
-            <Database className="w-3 h-3 text-amber-400 flex-shrink-0" />
+            <Database className="w-3 h-3 text-emerald-400 flex-shrink-0" />
             <span className="hidden sm:inline">IndexedDB Local</span>
             <span className="sm:hidden">Local</span>
           </div>
@@ -203,44 +465,25 @@ export const VaultDashboard: React.FC<Props> = ({
       {/* Main Container */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-5 pb-28 sm:pb-12">
         {/* Search & Actions Bar */}
-        <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+        <div className="flex gap-2.5 items-center justify-between">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3" />
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search records by title, username, or URL..."
-              className="w-full pl-9 pr-4 py-2 bg-[#0e1015] border border-neutral-800/80 focus:border-zinc-500 rounded-xl text-xs text-zinc-100 placeholder-zinc-500 outline-none transition"
+              className="w-full pl-10 pr-4 py-2.5 bg-[#0e1015] border border-zinc-800 focus:border-zinc-500 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none transition"
             />
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end space-x-2">
-            {/* Filter pills */}
-            <div className="flex bg-[#0e1015] border border-neutral-800/80 rounded-xl p-1 text-[11px] overflow-x-auto">
-              {(['ALL', 'LOGIN', 'SECURE_NOTE', 'CARD', 'API_KEY'] as const).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setSelectedType(type)}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition whitespace-nowrap ${
-                    selectedType === type
-                      ? 'bg-zinc-800 text-white'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  {type === 'ALL' ? 'All' : type.replace('_', ' ')}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="hidden sm:flex items-center space-x-1.5 py-2 px-3.5 bg-zinc-100 hover:bg-white text-black text-xs font-semibold rounded-xl transition shadow-md tactile-btn whitespace-nowrap"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>New Record</span>
-            </button>
-          </div>
+          <button
+            onClick={openAddDrawer}
+            className="flex items-center space-x-1.5 py-2.5 px-4 bg-white hover:bg-zinc-200 text-zinc-950 text-xs sm:text-sm font-semibold rounded-xl transition shadow-md tactile-btn whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4 text-zinc-950" />
+            <span>New Record</span>
+          </button>
         </div>
 
         {/* Item Cards / Dense List */}
@@ -252,11 +495,13 @@ export const VaultDashboard: React.FC<Props> = ({
             <div className="space-y-1">
               <h3 className="text-sm font-medium text-zinc-200">No credentials found</h3>
               <p className="text-xs text-zinc-500 max-w-xs mx-auto">
-                {searchQuery ? 'No records match your search filter.' : 'Your vault is empty. Click New Record to store your first login.'}
+                {searchQuery
+                  ? 'No records match your search filter.'
+                  : 'Your vault is empty. Click New Record to store your first login.'}
               </p>
             </div>
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={openAddDrawer}
               className="inline-flex items-center space-x-1.5 py-2 px-3.5 bg-zinc-100 hover:bg-white text-black text-xs font-semibold rounded-xl transition shadow-md tactile-btn mt-2"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -266,90 +511,53 @@ export const VaultDashboard: React.FC<Props> = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {filteredItems.map(({ item, secret }) => {
-              const isRevealed = !!revealedPasswords[item.id];
               return (
                 <div
                   key={item.id}
-                  className="bg-[#0e1016] border border-neutral-800/80 hover:border-neutral-700 rounded-xl p-4 space-y-3 transition group"
+                  onClick={() => setViewingRecord({ item, secret })}
+                  className="bg-[#0e1016] border border-neutral-800/80 hover:border-zinc-700 rounded-xl p-3 sm:p-3.5 transition group cursor-pointer hover:bg-[#11131a] flex items-center justify-between"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3 min-w-0">
-                      <div className="p-2 bg-zinc-900 border border-neutral-800 rounded-lg flex-shrink-0">
-                        {getTypeIcon(item.type)}
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="font-medium text-white text-sm truncate group-hover:text-zinc-100 transition">
-                          {item.title}
-                        </h4>
-                        {secret.url && (
-                          <a
-                            href={secret.url.startsWith('http') ? secret.url : `https://${secret.url}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[11px] text-zinc-500 hover:text-zinc-300 flex items-center space-x-1 truncate"
-                          >
-                            <span className="truncate">{secret.url.replace(/^https?:\/\//, '')}</span>
-                            <ExternalLink className="w-2.5 h-2.5 flex-shrink-0" />
-                          </a>
-                        )}
-                      </div>
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <FaviconBadge
+                      url={secret.url}
+                      type={item.type}
+                      className="group-hover:border-zinc-700 transition"
+                    />
+                    <div className="min-w-0">
+                      <h4 className="font-semibold text-white text-sm sm:text-base truncate group-hover:text-zinc-100 transition">
+                        {item.title}
+                      </h4>
+                      <p className="text-xs text-zinc-400 font-mono truncate mt-0.5">
+                        {secret.username || (secret.url ? secret.url.replace(/^https?:\/\//, '') : 'Secure Record')}
+                      </p>
                     </div>
-
-                    <button
-                      onClick={() => handleDeleteItem(item.id)}
-                      className="p-1.5 text-zinc-600 hover:text-rose-400 rounded-md transition opacity-0 group-hover:opacity-100"
-                      title="Delete record"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
                   </div>
 
-                  {/* Secret fields */}
-                  <div className="space-y-1.5 text-xs font-mono">
-                    {secret.username && (
-                      <div className="flex items-center justify-between p-2 bg-[#090a0d] rounded-lg border border-neutral-800/60">
-                        <span className="text-zinc-400 truncate pr-2">{secret.username}</span>
-                        <button
-                          onClick={() => copyToClipboard(secret.username, `user-${item.id}`)}
-                          className="text-zinc-500 hover:text-zinc-200 transition p-0.5"
-                          title="Copy username"
-                        >
-                          {copiedId === `user-${item.id}` ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                      </div>
-                    )}
-
+                  {/* Quick action buttons on card */}
+                  <div
+                    className="flex items-center space-x-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition flex-shrink-0 ml-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {secret.password && (
-                      <div className="flex items-center justify-between p-2 bg-[#090a0d] rounded-lg border border-neutral-800/60">
-                        <span className="text-zinc-300 truncate pr-2">
-                          {isRevealed ? secret.password : '••••••••••••••••'}
-                        </span>
-                        <div className="flex items-center space-x-1">
-                          <button
-                            onClick={() => togglePasswordVisibility(item.id)}
-                            className="text-zinc-500 hover:text-zinc-200 transition p-0.5"
-                            title={isRevealed ? 'Hide' : 'Reveal'}
-                          >
-                            {isRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          </button>
-                          <button
-                            onClick={() => copyToClipboard(secret.password, `pass-${item.id}`)}
-                            className="text-zinc-500 hover:text-zinc-200 transition p-0.5"
-                            title="Copy password"
-                          >
-                            {copiedId === `pass-${item.id}` ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
+                      <button
+                        onClick={() => copyToClipboard(secret.password, `pass-${item.id}`)}
+                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition"
+                        title="Copy password"
+                      >
+                        {copiedId === `pass-${item.id}` ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
                     )}
+                    <button
+                      onClick={() => openEditDrawer({ item, secret })}
+                      className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition"
+                      title="Edit record"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               );
@@ -358,62 +566,258 @@ export const VaultDashboard: React.FC<Props> = ({
         )}
       </main>
 
-      {/* ADD ITEM MODAL */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4">
-          <div className="w-full max-w-lg bg-[#0f1015] border-t sm:border border-neutral-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-white">New Encrypted Record</h3>
-              <div className="w-8 h-1 bg-zinc-700 rounded-full mx-auto sm:hidden" />
+      {/* VIEW RECORD DETAIL MODAL */}
+      {viewingRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity"
+            onClick={() => setViewingRecord(null)}
+          />
+
+          {/* Modal Card */}
+          <div className="relative z-10 w-full max-w-lg bg-[#0d0f15] border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in">
+            {/* Header */}
+            <div className="p-5 border-b border-zinc-800 flex items-start justify-between bg-[#0a0b0e]">
+              <div className="flex items-center space-x-3.5 min-w-0">
+                <FaviconBadge
+                  url={viewingRecord.secret?.url}
+                  type={viewingRecord.item.type}
+                  size="lg"
+                />
+                <div className="min-w-0">
+                  <h3 className="text-lg font-bold text-white truncate">{viewingRecord.item.title}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60">
+                      {viewingRecord.item.type.replace('_', ' ')}
+                    </span>
+                    {viewingRecord.secret?.url && (
+                      <a
+                        href={
+                          viewingRecord.secret.url.startsWith('http')
+                            ? viewingRecord.secret.url
+                            : `https://${viewingRecord.secret.url}`
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors truncate"
+                      >
+                        <span className="truncate max-w-[180px]">
+                          {viewingRecord.secret.url.replace(/^https?:\/\//, '')}
+                        </span>
+                        <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingRecord(null)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <form onSubmit={handleSaveItem} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">Title</label>
+            {/* Scrollable details body */}
+            <div className="p-5 space-y-4 overflow-y-auto">
+              {/* Username Field */}
+              {viewingRecord.secret?.username && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-400">Username / Email</label>
+                  <div className="flex items-center justify-between p-3 bg-[#08090d] rounded-xl border border-zinc-800">
+                    <span className="font-mono text-sm text-zinc-100 select-all truncate pr-2">
+                      {viewingRecord.secret.username}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(viewingRecord.secret.username, 'modal-user')}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs text-zinc-300 transition"
+                    >
+                      {copiedId === 'modal-user' ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      <span>{copiedId === 'modal-user' ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Password Field */}
+              {viewingRecord.secret?.password && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-400">Password</label>
+                  <div className="flex items-center justify-between p-3 bg-[#08090d] rounded-xl border border-zinc-800">
+                    <span className="font-mono text-sm text-zinc-100 tracking-wider select-all truncate pr-2">
+                      {revealedPasswords[viewingRecord.item.id]
+                        ? viewingRecord.secret.password
+                        : '••••••••••••••••••••'}
+                    </span>
+                    <div className="flex items-center space-x-1.5">
+                      <button
+                        onClick={() => togglePasswordVisibility(viewingRecord.item.id)}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800 transition"
+                        title={revealedPasswords[viewingRecord.item.id] ? 'Hide password' : 'Show password'}
+                      >
+                        {revealedPasswords[viewingRecord.item.id] ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => copyToClipboard(viewingRecord.secret.password, 'modal-pass')}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs text-zinc-300 transition"
+                      >
+                        {copiedId === 'modal-pass' ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                        <span>{copiedId === 'modal-pass' ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Improved 2FA Authenticator Display */}
+              {viewingRecord.secret?.totpSecret && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-400">Two-Factor Authentication</label>
+                  {totpCodes[viewingRecord.item.id] ? (
+                    <TotpDisplay
+                      code={totpCodes[viewingRecord.item.id].code}
+                      secondsRemaining={totpCodes[viewingRecord.item.id].secondsRemaining}
+                      onCopy={(c) => copyToClipboard(c, 'modal-totp')}
+                      copied={copiedId === 'modal-totp'}
+                    />
+                  ) : (
+                    <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-xs text-zinc-500 font-mono">
+                      Generating TOTP passcode...
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Notes Field */}
+              {viewingRecord.secret?.notes && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-400">Secure Notes</label>
+                  <div className="p-3 bg-[#08090d] rounded-xl border border-zinc-800 text-xs sm:text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">
+                    {viewingRecord.secret.notes}
+                  </div>
+                </div>
+              )}
+
+              {/* Metadata */}
+              <div className="pt-2 text-[11px] font-mono text-zinc-500 flex justify-between">
+                <span>Created {new Date(viewingRecord.item.createdAt).toLocaleDateString()}</span>
+                <span>Updated {new Date(viewingRecord.item.updatedAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-4 border-t border-zinc-800 bg-[#0a0b0e] flex items-center justify-between">
+              <button
+                onClick={() => {
+                  const toDelete = viewingRecord.item.id;
+                  setViewingRecord(null);
+                  handleDeleteItem(toDelete);
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 text-xs font-medium transition"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete</span>
+              </button>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    const toEdit = viewingRecord;
+                    setViewingRecord(null);
+                    openEditDrawer(toEdit);
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-semibold transition shadow-sm"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>Edit Record</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEW/EDIT RECORD RIGHT SIDEBAR DRAWER */}
+      {showAddDrawer && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity"
+            onClick={() => setShowAddDrawer(false)}
+          />
+
+          {/* Right-docked Drawer Window */}
+          <div className="relative z-10 w-full sm:w-[450px] max-w-[92vw] h-full bg-[#0d0f15] border-l border-zinc-800 shadow-2xl flex flex-col animate-fade-in">
+            <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-100">
+                  {editingItemId ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white">
+                    {editingItemId ? 'Edit Encrypted Record' : 'New Encrypted Record'}
+                  </h3>
+                  <p className="text-xs text-zinc-400 font-mono">
+                    {editingItemId ? 'Update stored encrypted credentials' : 'Encrypted with AES-256-GCM'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddDrawer(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                title="Close drawer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveItem} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-200 tracking-wide">Record Title</label>
                 <input
                   type="text"
                   required
                   value={newItemTitle}
                   onChange={(e) => setNewItemTitle(e.target.value)}
-                  placeholder="e.g. GitHub, ProtonMail, AWS"
-                  className="w-full px-3 py-2 bg-[#0a0b0e] border border-neutral-800 rounded-xl text-xs text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-500"
+                  placeholder="e.g. GitHub, AWS, ProtonMail"
+                  className="w-full px-3.5 py-2.5 bg-[#08090d] border border-zinc-800 focus:border-zinc-500 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none transition"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">Username</label>
-                  <input
-                    type="text"
-                    value={newItemUsername}
-                    onChange={(e) => setNewItemUsername(e.target.value)}
-                    placeholder="user@example.com"
-                    className="w-full px-3 py-2 bg-[#0a0b0e] border border-neutral-800 rounded-xl text-xs text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-500 font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">URL</label>
-                  <input
-                    type="text"
-                    value={newItemUrl}
-                    onChange={(e) => setNewItemUrl(e.target.value)}
-                    placeholder="https://github.com"
-                    className="w-full px-3 py-2 bg-[#0a0b0e] border border-neutral-800 rounded-xl text-xs text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-500"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-200 tracking-wide">Username or Email</label>
+                <input
+                  type="text"
+                  value={newItemUsername}
+                  onChange={(e) => setNewItemUsername(e.target.value)}
+                  placeholder="user@example.com"
+                  className="w-full px-3.5 py-2.5 bg-[#08090d] border border-zinc-800 focus:border-zinc-500 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none transition font-mono"
+                />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">Password</label>
+                  <label className="text-xs font-semibold text-zinc-200 tracking-wide">Password</label>
                   <button
                     type="button"
                     onClick={() => setShowGenerator(true)}
-                    className="text-[11px] text-zinc-400 hover:text-zinc-200 flex items-center space-x-1"
+                    className="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center space-x-1 transition-colors"
                   >
-                    <Sparkles className="w-3 h-3" />
-                    <span>Generate</span>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Generate Secure</span>
                   </button>
                 </div>
                 <input
@@ -421,35 +825,86 @@ export const VaultDashboard: React.FC<Props> = ({
                   value={newItemPassword}
                   onChange={(e) => setNewItemPassword(e.target.value)}
                   placeholder="Enter or generate..."
-                  className="w-full px-3 py-2 bg-[#0a0b0e] border border-neutral-800 rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-500"
+                  className="w-full px-3.5 py-2.5 bg-[#08090d] border border-zinc-800 focus:border-zinc-500 rounded-xl text-sm font-mono text-zinc-100 placeholder-zinc-500 outline-none transition tracking-wide"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">Notes (Optional)</label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-200 tracking-wide">Website URL</label>
+                  {newItemUrl && extractDomain(newItemUrl) && (
+                    <span className="text-[11px] font-mono text-zinc-400 flex items-center gap-1">
+                      <span>Detected:</span>
+                      <span className="text-zinc-200 font-medium">{extractDomain(newItemUrl)}</span>
+                    </span>
+                  )}
+                </div>
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    value={newItemUrl}
+                    onChange={(e) => setNewItemUrl(e.target.value)}
+                    placeholder="https://example.com"
+                    className="w-full pl-3.5 pr-11 py-2.5 bg-[#08090d] border border-zinc-800 focus:border-zinc-500 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none transition"
+                  />
+                  {newItemUrl && extractDomain(newItemUrl) && (
+                    <div className="absolute right-2.5 flex items-center pointer-events-none">
+                      <FaviconBadge
+                        url={newItemUrl}
+                        type="LOGIN"
+                        size="sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 2FA Authenticator Section */}
+              <div className="space-y-2 pt-3 border-t border-zinc-800">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>Two-Factor Auth (2FA / TOTP)</span>
+                  </label>
+                  <span className="text-xs font-mono text-zinc-400">Optional</span>
+                </div>
+                <input
+                  type="text"
+                  value={newItemTotpSecret}
+                  onChange={(e) => setNewItemTotpSecret(e.target.value.replace(/\s+/g, '').toUpperCase())}
+                  placeholder="Paste Base32 secret (e.g. JBSWY3DPEHPK3PXP)"
+                  className="w-full px-3.5 py-2.5 bg-[#08090d] border border-zinc-800 focus:border-emerald-500/70 rounded-xl text-sm font-mono tracking-wider text-emerald-300 placeholder-zinc-600 outline-none transition"
+                />
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Generates standard rotating 6-digit verification codes locally on your device hardware.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-200 tracking-wide">Notes (Optional)</label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   value={newItemNotes}
                   onChange={(e) => setNewItemNotes(e.target.value)}
-                  placeholder="Recovery keys, security questions..."
-                  className="w-full px-3 py-2 bg-[#0a0b0e] border border-neutral-800 rounded-xl text-xs text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-500 resize-none font-sans"
+                  placeholder="Recovery codes, security questions, account numbers..."
+                  className="w-full px-3.5 py-2.5 bg-[#08090d] border border-zinc-800 focus:border-zinc-500 rounded-xl text-xs sm:text-sm text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-500 resize-none font-sans leading-relaxed"
                 />
               </div>
 
-              <div className="flex space-x-2.5 pt-2">
+              <div className="flex space-x-3 pt-4 border-t border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="py-2.5 px-4 bg-[#14161d] hover:bg-[#1a1c24] text-zinc-300 font-medium rounded-xl text-xs transition border border-neutral-800"
+                  onClick={() => setShowAddDrawer(false)}
+                  className="py-2.5 px-4 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-medium rounded-xl text-sm transition border border-zinc-800"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-black font-semibold rounded-xl text-xs transition shadow-md tactile-btn disabled:opacity-40"
+                  className="flex-1 py-2.5 px-4 bg-white hover:bg-zinc-200 text-zinc-950 font-semibold rounded-xl text-sm transition shadow-md tactile-btn disabled:opacity-40"
                 >
-                  {isSaving ? 'Encrypting Record...' : 'Save & Encrypt'}
+                  {isSaving ? 'Encrypting Record...' : editingItemId ? 'Update & Encrypt' : 'Save & Encrypt'}
                 </button>
               </div>
             </form>
@@ -468,43 +923,25 @@ export const VaultDashboard: React.FC<Props> = ({
       />
 
       {/* Sleek Mobile Bottom Dock */}
-      <nav className="sm:hidden fixed bottom-3 left-4 right-4 z-40 bg-[#12141a]/95 backdrop-blur-xl border border-neutral-800/90 rounded-2xl px-6 py-2 flex items-center justify-between shadow-2xl">
-        <button
-          onClick={() => {
-            setSelectedType('ALL');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          className="flex flex-col items-center space-y-0.5 text-zinc-400 hover:text-white py-1"
-        >
-          <Key className="w-4 h-4" />
-          <span className="text-[10px] font-medium">Vault</span>
-        </button>
-
-        {/* Center Primary Action Button */}
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center justify-center -mt-5 w-11 h-11 bg-zinc-100 text-black rounded-full shadow-lg shadow-black/60 active:scale-95 transition tactile-btn"
-          title="Add New Record"
-        >
-          <Plus className="w-5 h-5 stroke-[2.5]" />
-        </button>
-
-        <button
-          onClick={() => setShowGenerator(true)}
-          className="flex flex-col items-center space-y-0.5 text-zinc-400 hover:text-white py-1"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span className="text-[10px] font-medium">Generator</span>
-        </button>
-
-        <button
-          onClick={onLock}
-          className="flex flex-col items-center space-y-0.5 text-zinc-400 hover:text-rose-400 py-1"
-        >
-          <Lock className="w-4 h-4" />
-          <span className="text-[10px] font-medium">Lock</span>
-        </button>
-      </nav>
+      <div className="sm:hidden fixed bottom-4 inset-x-4 z-20">
+        <div className="p-2 bg-[#0d0f14]/95 backdrop-blur-md border border-neutral-800 rounded-2xl shadow-2xl flex items-center justify-around">
+          <button
+            onClick={openAddDrawer}
+            className="flex-1 flex items-center justify-center space-x-1.5 py-2.5 bg-zinc-100 text-black font-semibold rounded-xl text-xs shadow-md tactile-btn"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Record</span>
+          </button>
+          <div className="w-[1px] h-6 bg-neutral-800 mx-2" />
+          <button
+            onClick={() => setShowGenerator(true)}
+            className="p-2.5 text-zinc-400 hover:text-white rounded-xl"
+            title="Password Generator"
+          >
+            <Sparkles className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

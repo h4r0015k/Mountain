@@ -10,6 +10,8 @@
  * 3. The 16-byte GCM authentication tag is automatically appended to ciphertext by WebCrypto.
  */
 
+import { bytesToBase64, base64ToBytes } from "./base64.js";
+
 export interface EncryptedVaultPayload {
   /** Base64 encoded 12-byte Initialization Vector (Nonce) */
   iv: string;
@@ -56,8 +58,8 @@ export async function encryptVaultRecord<T>(
 
   // 4. Return clean Base64 encoded payload
   return {
-    iv: Buffer.from(iv).toString("base64"),
-    ciphertext: Buffer.from(ciphertextBuffer).toString("base64"),
+    iv: bytesToBase64(iv),
+    ciphertext: bytesToBase64(new Uint8Array(ciphertextBuffer)),
     version: 1,
   };
 }
@@ -81,8 +83,8 @@ export async function decryptVaultRecord<T>(
   }
 
   // 1. Decode Base64 strings to Uint8Array byte buffers
-  const iv = new Uint8Array(Buffer.from(payload.iv, "base64"));
-  const ciphertextBytes = new Uint8Array(Buffer.from(payload.ciphertext, "base64"));
+  const iv = base64ToBytes(payload.iv);
+  const ciphertextBytes = base64ToBytes(payload.ciphertext);
 
   if (iv.byteLength !== 12) {
     throw new Error("Invalid IV length: AES-GCM requires a 12-byte initialization vector");

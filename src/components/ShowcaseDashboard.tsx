@@ -112,21 +112,25 @@ export const MountainIcon: React.FC<{ className?: string }> = ({ className = 'w-
     strokeLinecap="round"
     strokeLinejoin="round"
   >
+    {/* Ridge line for mountain depth */}
+    <path d="M12 5 L12 17.5" opacity="0.45" />
     {/* Secondary Peak (Right) */}
-    <path d="M17 14.5 L20.5 9.5 L29 25 H23" />
+    <path d="M16.5 13.5 L21 8.5 L29 25 H22" />
     {/* Main Mountain with Keyhole Cutout Base */}
-    <path d="M11.5 25 H3 L13.5 5 L23 25 H15.5 L14.7 20.8 A 2.2 2.2 0 1 0 12.3 20.8 L11.5 25 Z" />
+    <path d="M10.2 25 H3 L12 5 L22 25 H13.8 L13.2 21.2 A 1.8 1.8 0 1 0 10.8 21.2 L10.2 25 Z" />
   </svg>
 );
 
 interface Props {
   hasExistingVault: boolean;
   vaultItemCount?: number;
+  onLaunchVault?: () => void;
 }
 
 export const ShowcaseDashboard: React.FC<Props> = ({
   hasExistingVault,
   vaultItemCount = 0,
+  onLaunchVault,
 }) => {
   // Rotating Hero One-Liners
   const [phraseIndex, setPhraseIndex] = useState(0);

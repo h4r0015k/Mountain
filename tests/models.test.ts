@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { deriveVaultKey, generateSalt } from "../src/crypto/kdf.js";
 import { encryptVaultRecord, decryptVaultRecord } from "../src/crypto/vault.js";
 import { VaultItem, VaultSnapshot, LoginFields, CardFields } from "../src/models/vault.js";
+import { extractDomain } from "../src/components/VaultDashboard.js";
 
 describe("Mountain Domain Models & Vault Lifecycle", () => {
   let masterKey: CryptoKey;
@@ -92,5 +93,14 @@ describe("Mountain Domain Models & Vault Lifecycle", () => {
     );
     expect(decryptedCard.cardNumber).toBe("4111222233334444");
     expect(decryptedCard.cvv).toBe("987");
+  });
+
+  it("extracts clean domain names from URLs for dynamic favicon fetching", () => {
+    expect(extractDomain("https://github.com/login")).toBe("github.com");
+    expect(extractDomain("http://www.google.com/search?q=test")).toBe("google.com");
+    expect(extractDomain("stripe.com/dashboard")).toBe("stripe.com");
+    expect(extractDomain("https://sub.vault.bitwarden.com/")).toBe("sub.vault.bitwarden.com");
+    expect(extractDomain("")).toBeNull();
+    expect(extractDomain("not a url")).toBeNull();
   });
 });

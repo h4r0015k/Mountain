@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { deriveVaultKey } from '../crypto/kdf.js';
+import { base64ToBytes } from '../crypto/base64.js';
 import { VaultSnapshot } from '../models/vault.js';
 import { Lock, AlertTriangle, ArrowRight } from 'lucide-react';
 
@@ -26,13 +27,14 @@ export const VaultUnlock: React.FC<Props> = ({ snapshot, onUnlocked, onResetVaul
       setIsUnlocking(true);
       setError(null);
 
-      const cryptoKey = await deriveVaultKey(
+      const saltBytes = base64ToBytes(snapshot.salt);
+      const keyBundle = await deriveVaultKey(
         passphrase.trim(),
-        snapshot.salt,
-        snapshot.iterations
+        saltBytes,
+        snapshot.kdfIterations || 600000
       );
 
-      onUnlocked(cryptoKey, passphrase.trim());
+      onUnlocked(keyBundle.key, passphrase.trim());
     } catch (err: any) {
       setError(`Unlock failed: ${err.message}`);
     } finally {

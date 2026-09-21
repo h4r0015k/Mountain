@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VaultSnapshot } from '../models/vault.js';
 import {
   backupVault,
@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   ExternalLink,
   HelpCircle,
+  Copy,
 } from 'lucide-react';
 
 interface Props {
@@ -39,6 +40,7 @@ export const VaultBackupModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [copiedScope, setCopiedScope] = useState(false);
 
   // Google Drive state
   const [gdriveToken, setGdriveToken] = useState(() => {
@@ -49,17 +51,6 @@ export const VaultBackupModal: React.FC<Props> = ({
     }
   });
   const [showTokenHelp, setShowTokenHelp] = useState(false);
-
-  const handleTokenChange = (val: string) => {
-    setGdriveToken(val);
-    try {
-      sessionStorage.setItem('mountain_gdrive_token', val);
-    } catch {}
-  };
-
-  if (!isOpen) return null;
-
-  const wordCount = mnemonic.trim() ? mnemonic.trim().split(/\s+/).length : 0;
 
   const handleReset = () => {
     setDestination('select');
@@ -73,6 +64,36 @@ export const VaultBackupModal: React.FC<Props> = ({
     handleReset();
     onClose();
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  const handleTokenChange = (val: string) => {
+    setGdriveToken(val);
+    try {
+      sessionStorage.setItem('mountain_gdrive_token', val);
+    } catch {}
+  };
+
+  const handleCopyScope = async () => {
+    try {
+      await navigator.clipboard.writeText('https://www.googleapis.com/auth/drive.file');
+      setCopiedScope(true);
+      setTimeout(() => setCopiedScope(false), 2000);
+    } catch {}
+  };
+
+  if (!isOpen) return null;
+
+  const wordCount = mnemonic.trim() ? mnemonic.trim().split(/\s+/).length : 0;
 
   // ------------------ LOCAL BACKUP ------------------
 
@@ -155,25 +176,33 @@ export const VaultBackupModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-md bg-[#0f1015] border border-neutral-800 rounded-2xl shadow-2xl p-6 sm:p-7 space-y-5 glow-subtle">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="backup-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in"
+    >
+      <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 sm:p-7 space-y-5">
         {/* Header */}
-        <div className="flex items-center justify-between pb-1 border-b border-neutral-800/80">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-neutral-700 flex items-center justify-center text-zinc-100">
+        <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center text-zinc-100">
               <DownloadCloud className="w-4 h-4 text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white">Backup Vault</h2>
-              <p className="text-[11px] text-zinc-400 font-mono">
-                {snapshot.items.length} records · ID: {snapshot.vaultId.slice(0, 8)}
+              <h2 id="backup-modal-title" className="text-sm font-semibold text-zinc-100">
+                Backup Vault
+              </h2>
+              <p className="text-xs text-zinc-400">
+                {snapshot.items.length} {snapshot.items.length === 1 ? 'item' : 'items'} · Vault {snapshot.vaultId.slice(0, 8)}
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition"
+            className="p-1.5 text-zinc-400 hover:text-zinc-100 rounded-lg hover:bg-zinc-800 transition focus-ring"
+            aria-label="Close backup modal"
           >
             <X className="w-4 h-4" />
           </button>
@@ -193,7 +222,7 @@ export const VaultBackupModal: React.FC<Props> = ({
               <Check className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-white">Backup Complete</h3>
+              <h3 className="text-sm font-semibold text-zinc-100">Backup Complete</h3>
               <p className="text-xs text-zinc-400 max-w-xs mx-auto leading-relaxed">
                 {successMessage}
               </p>
@@ -202,7 +231,7 @@ export const VaultBackupModal: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={handleClose}
-                className="w-full py-2.5 px-4 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs transition shadow-md tactile-btn"
+                className="w-full py-2.5 px-4 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs transition shadow-md tactile-btn focus-ring"
               >
                 Done
               </button>
@@ -213,8 +242,8 @@ export const VaultBackupModal: React.FC<Props> = ({
             {/* STEP 1: DESTINATION SELECTION */}
             {destination === 'select' && (
               <div className="space-y-3">
-                <p className="text-xs text-zinc-400">
-                  Select where you want to export your encrypted vault backup:
+                <p className="text-xs text-zinc-300">
+                  Select destination to export your encrypted vault backup:
                 </p>
 
                 {/* Local Backup Option */}
@@ -224,23 +253,23 @@ export const VaultBackupModal: React.FC<Props> = ({
                     setError(null);
                     setDestination('local');
                   }}
-                  className="w-full p-4 bg-[#14161d] hover:bg-[#1a1c24] border border-neutral-800 hover:border-neutral-600 rounded-xl transition text-left group flex items-center justify-between"
+                  className="w-full p-4 bg-zinc-950/60 hover:bg-zinc-800/60 border border-zinc-800 hover:border-zinc-700 rounded-xl transition text-left group flex items-center justify-between focus-ring"
                 >
                   <div className="flex items-center space-x-3.5">
-                    <div className="p-2.5 bg-zinc-900 border border-neutral-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
+                    <div className="p-2.5 bg-zinc-900 border border-zinc-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
                       <HardDrive className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-white group-hover:text-zinc-100">
+                      <div className="text-sm font-medium text-zinc-100 group-hover:text-white">
                         Local Backup File
                       </div>
-                      <div className="text-[11px] text-zinc-400">
+                      <div className="text-xs text-zinc-400">
                         Download encrypted .json backup file directly to your device
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50">
+                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50">
                       Local
                     </span>
                     <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-200 transition" />
@@ -254,23 +283,23 @@ export const VaultBackupModal: React.FC<Props> = ({
                     setError(null);
                     setDestination('gdrive');
                   }}
-                  className="w-full p-4 bg-[#14161d] hover:bg-[#1a1c24] border border-neutral-800 hover:border-neutral-600 rounded-xl transition text-left group flex items-center justify-between"
+                  className="w-full p-4 bg-zinc-950/60 hover:bg-zinc-800/60 border border-zinc-800 hover:border-zinc-700 rounded-xl transition text-left group flex items-center justify-between focus-ring"
                 >
                   <div className="flex items-center space-x-3.5">
-                    <div className="p-2.5 bg-zinc-900 border border-neutral-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
+                    <div className="p-2.5 bg-zinc-900 border border-zinc-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
                       <Cloud className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-white group-hover:text-zinc-100">
+                      <div className="text-sm font-medium text-zinc-100 group-hover:text-white">
                         Google Drive
                       </div>
-                      <div className="text-[11px] text-zinc-400">
+                      <div className="text-xs text-zinc-400">
                         Save encrypted backup snapshot into Google Drive app storage
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50">
+                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50">
                       Cloud
                     </span>
                     <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-200 transition" />
@@ -285,7 +314,7 @@ export const VaultBackupModal: React.FC<Props> = ({
                 <div className="flex items-center justify-between pb-1">
                   <div className="flex items-center gap-2">
                     <HardDrive className="w-4 h-4 text-zinc-300" />
-                    <span className="text-xs font-semibold text-white">Local File Backup</span>
+                    <span className="text-xs font-semibold text-zinc-100">Local File Backup</span>
                   </div>
                   <button
                     type="button"
@@ -293,18 +322,18 @@ export const VaultBackupModal: React.FC<Props> = ({
                       setError(null);
                       setDestination('select');
                     }}
-                    className="text-[11px] text-zinc-400 hover:text-zinc-200"
+                    className="text-xs text-zinc-400 hover:text-zinc-200 transition"
                   >
                     Change Destination
                   </button>
                 </div>
 
-                <div className="p-3 bg-zinc-900/60 border border-neutral-800 rounded-xl space-y-1">
+                <div className="p-3 bg-zinc-950/60 border border-zinc-800 rounded-xl space-y-1">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-200">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
                     <span>Cryptographic Verification Gate</span>
                   </div>
-                  <p className="text-[11px] text-zinc-400 leading-normal">
+                  <p className="text-xs text-zinc-400 leading-normal">
                     Enter your 12 recovery words to verify you can decrypt this vault before creating the backup.
                   </p>
                 </div>
@@ -312,12 +341,12 @@ export const VaultBackupModal: React.FC<Props> = ({
                 {/* 12 Recovery Words Input */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                    <label className="text-xs font-medium text-zinc-300">
                       12 Recovery Words
                     </label>
                     <span
-                      className={`text-[10px] font-mono ${
-                        wordCount === 12 ? 'text-emerald-400 font-semibold' : 'text-zinc-500'
+                      className={`text-xs font-mono ${
+                        wordCount === 12 ? 'text-emerald-400 font-semibold' : 'text-zinc-400'
                       }`}
                     >
                       {wordCount === 12 ? '12 / 12 words ✓' : `${wordCount} / 12 words`}
@@ -329,7 +358,7 @@ export const VaultBackupModal: React.FC<Props> = ({
                     value={mnemonic}
                     onChange={(e) => setMnemonic(e.target.value)}
                     placeholder="Enter the 12 words separated by spaces..."
-                    className="w-full p-3 bg-[#0a0b0e] border border-neutral-800 focus:border-zinc-500 rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-700 outline-none transition resize-none"
+                    className="w-full p-3 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-600 outline-none transition resize-none"
                   />
                 </div>
 
@@ -340,7 +369,7 @@ export const VaultBackupModal: React.FC<Props> = ({
                       setError(null);
                       setDestination('select');
                     }}
-                    className="py-2.5 px-4 bg-[#14161d] hover:bg-[#1a1c24] text-zinc-300 font-medium rounded-xl text-xs transition border border-neutral-800 flex items-center justify-center gap-1.5"
+                    className="py-2.5 px-4 bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 font-medium rounded-xl text-xs transition border border-zinc-700/60 flex items-center justify-center gap-1.5 focus-ring"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Back</span>
@@ -348,7 +377,7 @@ export const VaultBackupModal: React.FC<Props> = ({
                   <button
                     type="submit"
                     disabled={isProcessing || !mnemonic.trim()}
-                    className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-black font-semibold rounded-xl text-xs transition shadow-md tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs transition shadow-md tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5 focus-ring"
                   >
                     {isProcessing ? (
                       <>
@@ -372,7 +401,7 @@ export const VaultBackupModal: React.FC<Props> = ({
                 <div className="flex items-center justify-between pb-1">
                   <div className="flex items-center gap-2">
                     <Cloud className="w-4 h-4 text-zinc-300" />
-                    <span className="text-xs font-semibold text-white">Google Drive Backup</span>
+                    <span className="text-xs font-semibold text-zinc-100">Google Drive Backup</span>
                   </div>
                   <button
                     type="button"
@@ -380,7 +409,7 @@ export const VaultBackupModal: React.FC<Props> = ({
                       setError(null);
                       setDestination('select');
                     }}
-                    className="text-[11px] text-zinc-400 hover:text-zinc-200"
+                    className="text-xs text-zinc-400 hover:text-zinc-200 transition"
                   >
                     Change Destination
                   </button>
@@ -389,14 +418,14 @@ export const VaultBackupModal: React.FC<Props> = ({
                 {/* Google OAuth Token Input */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                    <label className="text-xs font-medium text-zinc-300">
                       Google OAuth Access Token
                     </label>
                     <a
                       href="https://developers.google.com/oauthplayground/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 hover:underline"
+                      className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 hover:underline focus-ring rounded"
                     >
                       <span>OAuth Playground</span>
                       <ExternalLink className="w-3 h-3" />
@@ -408,57 +437,79 @@ export const VaultBackupModal: React.FC<Props> = ({
                     value={gdriveToken}
                     onChange={(e) => handleTokenChange(e.target.value)}
                     placeholder="ya29.a0..."
-                    className="w-full px-3 py-2 bg-[#0a0b0e] border border-neutral-800 focus:border-zinc-500 rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-700 outline-none transition"
+                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-600 outline-none transition"
                   />
 
                   {/* Collapsible How-To Guide */}
-                  <div className="rounded-xl border border-neutral-800/90 bg-[#0c0d12] p-3 text-xs space-y-2">
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3 text-xs space-y-2">
                     <button
                       type="button"
                       onClick={() => setShowTokenHelp(!showTokenHelp)}
                       className="w-full flex items-center justify-between text-zinc-300 hover:text-white font-medium text-left"
                     >
-                      <span className="flex items-center gap-1.5 text-[11px]">
+                      <span className="flex items-center gap-1.5 text-xs">
                         <HelpCircle className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
                         <span>How to get a Google OAuth token (1 minute guide)</span>
                       </span>
-                      <span className="text-[10px] text-zinc-500 font-mono">
+                      <span className="text-xs text-zinc-400 font-mono">
                         {showTokenHelp ? 'Hide' : 'View steps'}
                       </span>
                     </button>
 
                     {showTokenHelp && (
-                      <ol className="list-decimal list-inside text-[11px] text-zinc-400 space-y-1.5 pt-2 border-t border-neutral-800/80 leading-relaxed">
-                        <li>
-                          Open the{' '}
-                          <a
-                            href="https://developers.google.com/oauthplayground/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-emerald-400 hover:underline font-medium inline-flex items-center gap-0.5"
-                          >
-                            Google OAuth 2.0 Playground
-                            <ExternalLink className="w-2.5 h-2.5" />
-                          </a>.
-                        </li>
-                        <li>
-                          In <strong>Step 1</strong>, scroll down to{' '}
-                          <strong className="text-zinc-200">Drive API v3</strong> and check{' '}
-                          <code className="text-zinc-200 bg-zinc-800 px-1 py-0.5 rounded text-[10px]">
-                            https://www.googleapis.com/auth/drive.file
-                          </code>.
-                        </li>
-                        <li>
-                          Click <strong className="text-zinc-200">Authorize APIs</strong> and sign in with your Google account.
-                        </li>
-                        <li>
-                          In <strong>Step 2</strong>, click{' '}
-                          <strong className="text-zinc-200">Exchange authorization code for tokens</strong>.
-                        </li>
-                        <li>
-                          Copy the <strong className="text-emerald-300">Access token</strong> (starts with <code className="text-zinc-200">ya29...</code>) and paste it into the field above.
-                        </li>
-                      </ol>
+                      <div className="space-y-2 pt-2 border-t border-zinc-800/80 leading-relaxed text-zinc-400 text-xs">
+                        <ol className="list-decimal list-inside space-y-2">
+                          <li>
+                            Open the{' '}
+                            <a
+                              href="https://developers.google.com/oauthplayground/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-emerald-400 hover:underline font-medium inline-flex items-center gap-0.5"
+                            >
+                              Google OAuth 2.0 Playground
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>.
+                          </li>
+                          <li className="space-y-1.5">
+                            <div>
+                              In <strong>Step 1</strong>, authorize the Drive scope:
+                            </div>
+                            <div className="flex items-center gap-2 p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg">
+                              <code className="text-zinc-200 text-xs font-mono flex-1 truncate">
+                                https://www.googleapis.com/auth/drive.file
+                              </code>
+                              <button
+                                type="button"
+                                onClick={handleCopyScope}
+                                className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs rounded transition flex items-center gap-1 shrink-0"
+                              >
+                                {copiedScope ? (
+                                  <>
+                                    <Check className="w-3 h-3 text-emerald-400" />
+                                    <span>Copied</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3 h-3" />
+                                    <span>Copy Scope</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </li>
+                          <li>
+                            Click <strong className="text-zinc-200">Authorize APIs</strong> and sign in with your Google account.
+                          </li>
+                          <li>
+                            In <strong>Step 2</strong>, click{' '}
+                            <strong className="text-zinc-200">Exchange authorization code for tokens</strong>.
+                          </li>
+                          <li>
+                            Copy the <strong className="text-emerald-300">Access token</strong> (starts with <code className="text-zinc-200 font-mono">ya29...</code>) and paste it into the field above.
+                          </li>
+                        </ol>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -466,12 +517,12 @@ export const VaultBackupModal: React.FC<Props> = ({
                 {/* 12 Recovery Words Input */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                    <label className="text-xs font-medium text-zinc-300">
                       12 Recovery Words
                     </label>
                     <span
-                      className={`text-[10px] font-mono ${
-                        wordCount === 12 ? 'text-emerald-400 font-semibold' : 'text-zinc-500'
+                      className={`text-xs font-mono ${
+                        wordCount === 12 ? 'text-emerald-400 font-semibold' : 'text-zinc-400'
                       }`}
                     >
                       {wordCount === 12 ? '12 / 12 words ✓' : `${wordCount} / 12 words`}
@@ -483,10 +534,10 @@ export const VaultBackupModal: React.FC<Props> = ({
                     value={mnemonic}
                     onChange={(e) => setMnemonic(e.target.value)}
                     placeholder="Enter the 12 words separated by spaces..."
-                    className="w-full p-3 bg-[#0a0b0e] border border-neutral-800 focus:border-zinc-500 rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-700 outline-none transition resize-none"
+                    className="w-full p-3 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-600 outline-none transition resize-none"
                   />
-                  <p className="text-[10px] text-zinc-500">
-                    The 12 words are verified before upload to guarantee future recovery.
+                  <p className="text-xs text-zinc-400">
+                    The 12 words are verified locally before upload to guarantee future recovery.
                   </p>
                 </div>
 
@@ -497,7 +548,7 @@ export const VaultBackupModal: React.FC<Props> = ({
                       setError(null);
                       setDestination('select');
                     }}
-                    className="py-2.5 px-4 bg-[#14161d] hover:bg-[#1a1c24] text-zinc-300 font-medium rounded-xl text-xs transition border border-neutral-800 flex items-center justify-center gap-1.5"
+                    className="py-2.5 px-4 bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 font-medium rounded-xl text-xs transition border border-zinc-700/60 flex items-center justify-center gap-1.5 focus-ring"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Back</span>
@@ -505,7 +556,7 @@ export const VaultBackupModal: React.FC<Props> = ({
                   <button
                     type="submit"
                     disabled={isProcessing || !gdriveToken.trim() || !mnemonic.trim()}
-                    className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-black font-semibold rounded-xl text-xs transition shadow-md tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs transition shadow-md tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5 focus-ring"
                   >
                     {isProcessing ? (
                       <>

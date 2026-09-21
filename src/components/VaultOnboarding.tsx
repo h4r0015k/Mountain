@@ -28,8 +28,6 @@ import {
   Upload,
   FileJson,
   Loader2,
-  KeyRound,
-  Settings,
   ExternalLink,
   HelpCircle,
 } from 'lucide-react';
@@ -79,6 +77,7 @@ export const VaultOnboarding: React.FC<Props> = ({
     }
   });
   const [showTokenHelp, setShowTokenHelp] = useState(false);
+  const [copiedScope, setCopiedScope] = useState(false);
   const [gdriveBackups, setGdriveBackups] = useState<GoogleDriveFileMetadata[]>([]);
   const [selectedGdriveFile, setSelectedGdriveFile] = useState<GoogleDriveFileMetadata | null>(null);
   const [isLoadingGdrive, setIsLoadingGdrive] = useState(false);
@@ -87,6 +86,14 @@ export const VaultOnboarding: React.FC<Props> = ({
     setGdriveToken(val);
     try {
       sessionStorage.setItem('mountain_gdrive_token', val);
+    } catch {}
+  };
+
+  const handleCopyScope = async () => {
+    try {
+      await navigator.clipboard.writeText('https://www.googleapis.com/auth/drive.file');
+      setCopiedScope(true);
+      setTimeout(() => setCopiedScope(false), 2000);
     } catch {}
   };
 
@@ -331,29 +338,29 @@ export const VaultOnboarding: React.FC<Props> = ({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-[#08090c] text-zinc-100">
-      <div className="w-full max-w-md bg-[#0f1015] border border-neutral-800/80 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6 glow-subtle">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-zinc-950 text-zinc-100 font-sans">
+      <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6">
         {/* Brand Header */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-100 shadow-md p-1.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-100 shadow-sm p-1.5">
                 <MountainIcon className="w-full h-full" />
               </div>
-              <span className="font-semibold text-lg tracking-tight text-white">Mountain</span>
+              <span className="font-semibold text-lg tracking-tight text-zinc-100">Mountain</span>
             </div>
-            <span className="text-[10px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-full bg-zinc-800/80 text-zinc-400 border border-zinc-700/50">
+            <span className="text-xs font-mono tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
               Local Vault
             </span>
           </div>
           <p className="text-xs text-zinc-400 font-normal leading-relaxed">
             Zero-knowledge, hardware-grade local password manager.
             <br />
-            No cloud required.
+            No mandatory cloud connection.
           </p>
         </div>
 
-        <div className="h-[1px] bg-neutral-800/60" />
+        <div className="h-[1px] bg-zinc-800" />
 
         {error && (
           <div className="p-3.5 bg-rose-950/40 border border-rose-800/60 rounded-xl text-xs text-rose-300 flex items-start space-x-2.5">
@@ -370,15 +377,15 @@ export const VaultOnboarding: React.FC<Props> = ({
                 setError(null);
                 setMode('create');
               }}
-              className="w-full p-4 bg-[#14161d] hover:bg-[#1a1c24] border border-neutral-800 hover:border-neutral-600 rounded-xl transition text-left group flex items-center justify-between"
+              className="w-full p-4 bg-zinc-950/60 hover:bg-zinc-800/60 border border-zinc-800 hover:border-zinc-700 rounded-xl transition text-left group flex items-center justify-between focus-ring"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="p-2.5 bg-zinc-900 border border-neutral-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
+                <div className="p-2.5 bg-zinc-900 border border-zinc-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white group-hover:text-zinc-100">Create New Vault</div>
-                  <div className="text-[11px] text-zinc-400">Generate a 12-word cryptographic seed</div>
+                  <div className="text-sm font-medium text-zinc-100 group-hover:text-white">Create New Vault</div>
+                  <div className="text-xs text-zinc-400">Generate a 12-word cryptographic seed</div>
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-200 transition transform group-hover:translate-x-0.5" />
@@ -390,15 +397,15 @@ export const VaultOnboarding: React.FC<Props> = ({
                 setRestoreStep('select_source');
                 setMode('restore');
               }}
-              className="w-full p-4 bg-[#14161d] hover:bg-[#1a1c24] border border-neutral-800 hover:border-neutral-600 rounded-xl transition text-left group flex items-center justify-between"
+              className="w-full p-4 bg-zinc-950/60 hover:bg-zinc-800/60 border border-zinc-800 hover:border-zinc-700 rounded-xl transition text-left group flex items-center justify-between focus-ring"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="p-2.5 bg-zinc-900 border border-neutral-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
+                <div className="p-2.5 bg-zinc-900 border border-zinc-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
                   <DownloadCloud className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white group-hover:text-zinc-100">Restore Vault</div>
-                  <div className="text-[11px] text-zinc-400">Import backup from local file or Google Drive</div>
+                  <div className="text-sm font-medium text-zinc-100 group-hover:text-white">Restore Vault</div>
+                  <div className="text-xs text-zinc-400">Import backup from local file or Google Drive</div>
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-200 transition transform group-hover:translate-x-0.5" />
@@ -411,7 +418,7 @@ export const VaultOnboarding: React.FC<Props> = ({
           <div className="space-y-5">
             <div>
               <div className="flex items-center justify-between mb-2.5">
-                <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                <span className="text-xs font-medium text-zinc-300">
                   Secret Recovery Phrase
                 </span>
                 <div className="flex items-center space-x-1.5">
@@ -419,14 +426,14 @@ export const VaultOnboarding: React.FC<Props> = ({
                     type="button"
                     onClick={handleRegenerateMnemonic}
                     title="Generate new words"
-                    className="p-1 text-zinc-500 hover:text-zinc-300 rounded transition"
+                    className="p-1 text-zinc-400 hover:text-zinc-200 rounded transition focus-ring"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                   </button>
                   <button
                     type="button"
                     onClick={handleCopyMnemonic}
-                    className="flex items-center space-x-1 text-[11px] font-medium py-1 px-2 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition"
+                    className="flex items-center space-x-1 text-xs font-medium py-1 px-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition focus-ring"
                   >
                     {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                     <span>{copied ? 'Copied' : 'Copy'}</span>
@@ -435,14 +442,14 @@ export const VaultOnboarding: React.FC<Props> = ({
               </div>
 
               {/* Word grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-2.5 bg-[#0a0b0e] border border-neutral-800 rounded-xl font-mono text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-3 bg-zinc-950 border border-zinc-800 rounded-xl font-mono text-xs">
                 {mnemonicWords.map((word, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center space-x-2 py-1.5 px-2 bg-[#12141a] rounded-lg border border-neutral-800/60"
+                    className="flex items-center space-x-2 py-1.5 px-2 bg-zinc-900 rounded-lg border border-zinc-800/80"
                   >
-                    <span className="text-zinc-600 select-none text-[10px] w-3.5 text-right font-mono">
-                      {idx + 1}
+                    <span className="text-zinc-400 select-none text-xs w-4 text-right font-mono">
+                      {String(idx + 1).padStart(2, '0')}
                     </span>
                     <span className="text-zinc-100 font-medium tracking-tight truncate">{word}</span>
                   </div>
@@ -451,14 +458,14 @@ export const VaultOnboarding: React.FC<Props> = ({
             </div>
 
             {/* Acknowledgment Checkbox */}
-            <label className="flex items-start space-x-2.5 p-3 bg-zinc-900/60 border border-neutral-800/80 rounded-xl cursor-pointer select-none">
+            <label className="flex items-start space-x-2.5 p-3 bg-zinc-950/60 border border-zinc-800 rounded-xl cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={hasBackedUp}
                 onChange={(e) => setHasBackedUp(e.target.checked)}
-                className="mt-0.5 rounded accent-zinc-200"
+                className="mt-0.5 rounded accent-zinc-400"
               />
-              <span className="text-[11px] text-zinc-400 leading-relaxed">
+              <span className="text-xs text-zinc-300 leading-relaxed">
                 I have written down these 12 words. If I lose them, my data is permanently unrecoverable.
               </span>
             </label>
@@ -467,7 +474,7 @@ export const VaultOnboarding: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setMode('choice')}
-                className="py-2.5 px-4 bg-[#14161d] hover:bg-[#1a1c24] text-zinc-300 font-medium rounded-xl text-xs transition border border-neutral-800"
+                className="py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium rounded-xl text-xs transition border border-zinc-700/60 focus-ring"
               >
                 Back
               </button>
@@ -475,7 +482,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                 type="button"
                 onClick={handleProceedToVerify}
                 disabled={!hasBackedUp}
-                className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-black font-semibold rounded-xl text-xs transition shadow-md tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs transition shadow-sm tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5 focus-ring"
               >
                 <span>Verify Backup Words</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -487,12 +494,12 @@ export const VaultOnboarding: React.FC<Props> = ({
         {/* STEP 2B: VERIFY RECOVERY WORDS MECHANISM */}
         {mode === 'verify' && (
           <form onSubmit={handleCreateVault} className="space-y-4">
-            <div className="p-3 bg-zinc-900/60 border border-neutral-800 rounded-xl space-y-1">
+            <div className="p-3 bg-zinc-950/60 border border-zinc-800 rounded-xl space-y-1">
               <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-200">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 <span>Verify Your Backup</span>
               </div>
-              <p className="text-[11px] text-zinc-400 leading-normal">
+              <p className="text-xs text-zinc-400 leading-normal">
                 To guarantee you won't be locked out, confirm the requested words from your handwritten backup.
               </p>
             </div>
@@ -506,14 +513,14 @@ export const VaultOnboarding: React.FC<Props> = ({
 
                 return (
                   <div key={idx} className="space-y-1">
-                    <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 flex items-center justify-between">
+                    <label className="text-xs font-medium text-zinc-300 flex items-center justify-between">
                       <span>Word #{idx + 1}</span>
                       {isMatched && (
-                        <span className="text-emerald-400 text-[11px] font-mono flex items-center gap-1">
+                        <span className="text-emerald-400 text-xs font-mono flex items-center gap-1">
                           <Check className="w-3 h-3" /> Verified
                         </span>
                       )}
-                      {isWrong && <span className="text-rose-400 text-[11px] font-mono">Incorrect</span>}
+                      {isWrong && <span className="text-rose-400 text-xs font-mono">Incorrect</span>}
                     </label>
                     <input
                       type="text"
@@ -523,12 +530,12 @@ export const VaultOnboarding: React.FC<Props> = ({
                         setVerifyInputs((prev) => ({ ...prev, [idx]: e.target.value.toLowerCase().trim() }))
                       }
                       placeholder={`Enter word #${idx + 1}`}
-                      className={`w-full px-3.5 py-2 bg-[#0a0b0e] border rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-700 outline-none transition ${
+                      className={`w-full px-3.5 py-2 bg-zinc-950 border rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-600 outline-none transition focus-ring ${
                         isMatched
                           ? 'border-emerald-500/70 bg-emerald-950/20'
                           : isWrong
                           ? 'border-rose-500/70 bg-rose-950/20'
-                          : 'border-neutral-800 focus:border-zinc-500'
+                          : 'border-zinc-800'
                       }`}
                     />
                   </div>
@@ -537,17 +544,17 @@ export const VaultOnboarding: React.FC<Props> = ({
             </div>
 
             {/* Optional Daily PIN */}
-            <div className="space-y-1 pt-2 border-t border-neutral-800/80">
-              <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 flex justify-between">
+            <div className="space-y-1 pt-2 border-t border-zinc-800">
+              <label className="text-xs font-medium text-zinc-300 flex justify-between">
                 <span>Unlock Passphrase</span>
-                <span className="text-zinc-600 font-sans normal-case">Optional</span>
+                <span className="text-zinc-400 text-xs normal-case">Optional</span>
               </label>
               <input
                 type="password"
                 value={pinPassword}
                 onChange={(e) => setPinPassword(e.target.value)}
                 placeholder="Optional password or PIN"
-                className="w-full px-3.5 py-2 bg-[#0a0b0e] border border-neutral-800 focus:border-zinc-500 rounded-xl text-xs text-zinc-100 placeholder-zinc-700 outline-none transition"
+                className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs text-zinc-100 placeholder-zinc-600 outline-none transition"
               />
             </div>
 
@@ -555,7 +562,7 @@ export const VaultOnboarding: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setMode('create')}
-                className="py-2.5 px-4 bg-[#14161d] hover:bg-[#1a1c24] text-zinc-300 font-medium rounded-xl text-xs transition border border-neutral-800 flex items-center gap-1"
+                className="py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium rounded-xl text-xs transition border border-zinc-700/60 flex items-center gap-1 focus-ring"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Review</span>
@@ -563,10 +570,10 @@ export const VaultOnboarding: React.FC<Props> = ({
               <button
                 type="submit"
                 disabled={isInitializing || !isAllVerified}
-                className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-black font-semibold rounded-xl text-xs transition shadow-md tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs transition shadow-sm tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5 focus-ring"
               >
                 <Lock className="w-3.5 h-3.5 text-zinc-950" />
-                <span>{isInitializing ? 'Deriving Keys (600k PBKDF2)...' : 'Initialize Vault'}</span>
+                <span>{isInitializing ? 'Deriving Keys...' : 'Initialize Vault'}</span>
               </button>
             </div>
           </form>
@@ -579,7 +586,7 @@ export const VaultOnboarding: React.FC<Props> = ({
             {restoreStep === 'select_source' && (
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-semibold text-white">Choose Backup Source</h3>
+                  <h3 className="text-sm font-semibold text-zinc-100">Choose Backup Source</h3>
                   <p className="text-xs text-zinc-400">
                     Select where your encrypted backup is located.
                   </p>
@@ -593,23 +600,23 @@ export const VaultOnboarding: React.FC<Props> = ({
                       setError(null);
                       setRestoreStep('local_file');
                     }}
-                    className="w-full p-4 bg-[#14161d] hover:bg-[#1a1c24] border border-neutral-800 hover:border-neutral-600 rounded-xl transition text-left group flex items-center justify-between"
+                    className="w-full p-4 bg-zinc-950/60 hover:bg-zinc-800/60 border border-zinc-800 hover:border-zinc-700 rounded-xl transition text-left group flex items-center justify-between focus-ring"
                   >
                     <div className="flex items-center space-x-3.5">
-                      <div className="p-2.5 bg-zinc-900 border border-neutral-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
+                      <div className="p-2.5 bg-zinc-900 border border-zinc-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
                         <HardDrive className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white group-hover:text-zinc-100">
+                        <div className="text-sm font-medium text-zinc-100 group-hover:text-white">
                           Local Backup File
                         </div>
-                        <div className="text-[11px] text-zinc-400">
+                        <div className="text-xs text-zinc-400">
                           Restore from a .json or .mountain backup on this device
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50">
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
                         Local
                       </span>
                       <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-200 transition" />
@@ -623,23 +630,23 @@ export const VaultOnboarding: React.FC<Props> = ({
                       setError(null);
                       setRestoreStep('google_drive');
                     }}
-                    className="w-full p-4 bg-[#14161d] hover:bg-[#1a1c24] border border-neutral-800 hover:border-neutral-600 rounded-xl transition text-left group flex items-center justify-between"
+                    className="w-full p-4 bg-zinc-950/60 hover:bg-zinc-800/60 border border-zinc-800 hover:border-zinc-700 rounded-xl transition text-left group flex items-center justify-between focus-ring"
                   >
                     <div className="flex items-center space-x-3.5">
-                      <div className="p-2.5 bg-zinc-900 border border-neutral-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
+                      <div className="p-2.5 bg-zinc-900 border border-zinc-700/60 rounded-lg text-zinc-200 group-hover:text-white transition">
                         <Cloud className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white group-hover:text-zinc-100">
+                        <div className="text-sm font-medium text-zinc-100 group-hover:text-white">
                           Google Drive
                         </div>
-                        <div className="text-[11px] text-zinc-400">
+                        <div className="text-xs text-zinc-400">
                           Fetch and restore encrypted snapshot from Google Drive
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50">
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
                         Cloud
                       </span>
                       <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-200 transition" />
@@ -657,7 +664,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                         setMode('choice');
                       }
                     }}
-                    className="w-full py-2.5 px-4 bg-[#14161d] hover:bg-[#1a1c24] text-zinc-300 font-medium rounded-xl text-xs transition border border-neutral-800 flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium rounded-xl text-xs transition border border-zinc-700/60 flex items-center justify-center gap-1.5 focus-ring"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Back</span>
@@ -672,7 +679,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                 <div className="flex items-center justify-between pb-1">
                   <div className="flex items-center gap-2">
                     <HardDrive className="w-4 h-4 text-zinc-300" />
-                    <span className="text-xs font-semibold text-white">Restore from Local File</span>
+                    <span className="text-xs font-semibold text-zinc-100">Restore from Local File</span>
                   </div>
                   <button
                     type="button"
@@ -680,7 +687,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                       setError(null);
                       setRestoreStep('select_source');
                     }}
-                    className="text-[11px] text-zinc-400 hover:text-zinc-200"
+                    className="text-xs text-zinc-400 hover:text-zinc-200 transition"
                   >
                     Change Source
                   </button>
@@ -695,8 +702,8 @@ export const VaultOnboarding: React.FC<Props> = ({
                     onClick={() => fileInputRef.current?.click()}
                     className={`p-6 border-2 border-dashed rounded-xl text-center cursor-pointer transition flex flex-col items-center justify-center space-y-2.5 ${
                       isDragging
-                        ? 'border-zinc-400 bg-zinc-900/60'
-                        : 'border-neutral-800 hover:border-zinc-600 bg-[#0a0b0e]'
+                        ? 'border-zinc-300 bg-zinc-800/70'
+                        : 'border-zinc-800 hover:border-zinc-600 bg-zinc-950'
                     }`}
                   >
                     <input
@@ -706,30 +713,30 @@ export const VaultOnboarding: React.FC<Props> = ({
                       onChange={handleLocalFileChange}
                       className="hidden"
                     />
-                    <div className="w-10 h-10 rounded-full bg-zinc-900 border border-neutral-700 flex items-center justify-center text-zinc-300">
+                    <div className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-300">
                       <Upload className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="text-xs font-medium text-zinc-200">
                         Click to select or drag backup file here
                       </div>
-                      <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                      <div className="text-xs text-zinc-400 font-mono mt-0.5">
                         Accepts .json or .mountain backup files
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3.5 bg-zinc-900/80 border border-neutral-700/80 rounded-xl flex items-center justify-between">
+                  <div className="p-3.5 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between">
                     <div className="flex items-center space-x-3 overflow-hidden">
-                      <div className="p-2 bg-zinc-800 rounded-lg text-zinc-200">
+                      <div className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-200">
                         <FileJson className="w-4 h-4 text-emerald-400" />
                       </div>
                       <div className="truncate">
-                        <div className="text-xs font-medium text-white truncate max-w-[200px]">
+                        <div className="text-xs font-medium text-zinc-100 truncate max-w-[200px]">
                           {localFileName}
                         </div>
-                        <div className="text-[10px] font-mono text-zinc-400">
-                          ID: {localSnapshot.vaultId.slice(0, 8)} · {localSnapshot.items.length} records
+                        <div className="text-xs font-mono text-zinc-400">
+                          Vault {localSnapshot.vaultId.slice(0, 8)} · {localSnapshot.items.length} records
                         </div>
                       </div>
                     </div>
@@ -741,7 +748,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                         setLocalFileName('');
                         if (fileInputRef.current) fileInputRef.current.value = '';
                       }}
-                      className="text-[11px] text-zinc-400 hover:text-white px-2 py-1 rounded bg-zinc-800 border border-zinc-700"
+                      className="text-xs text-zinc-300 hover:text-white px-2.5 py-1 rounded-lg bg-zinc-800 border border-zinc-700 focus-ring"
                     >
                       Change
                     </button>
@@ -751,14 +758,14 @@ export const VaultOnboarding: React.FC<Props> = ({
                 {/* 12-Word Recovery Phrase Input */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                    <label className="text-xs font-medium text-zinc-300">
                       Enter 12-Word Recovery Phrase
                     </label>
                     <span
-                      className={`text-[10px] font-mono ${
+                      className={`text-xs font-mono ${
                         restoreWordCount === 12
                           ? 'text-emerald-400 font-semibold'
-                          : 'text-zinc-500'
+                          : 'text-zinc-400'
                       }`}
                     >
                       {restoreWordCount === 12 ? '12 / 12 words ✓' : `${restoreWordCount} / 12 words`}
@@ -770,25 +777,25 @@ export const VaultOnboarding: React.FC<Props> = ({
                     value={restoreWords}
                     onChange={(e) => setRestoreWords(e.target.value)}
                     placeholder="Enter the 12 words separated by spaces..."
-                    className="w-full p-3 bg-[#0a0b0e] border border-neutral-800 focus:border-zinc-500 rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-700 outline-none transition resize-none"
+                    className="w-full p-3 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-600 outline-none transition resize-none"
                   />
-                  <p className="text-[10px] text-zinc-500">
+                  <p className="text-xs text-zinc-400">
                     The 12 words will be cryptographically verified against the backup file before restoring.
                   </p>
                 </div>
 
-                {/* Optional Daily PIN / Passphrase */}
+                {/* Optional Passphrase */}
                 <div className="space-y-1 pt-1">
-                  <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 flex justify-between">
+                  <label className="text-xs font-medium text-zinc-300 flex justify-between">
                     <span>Unlock Passphrase</span>
-                    <span className="text-zinc-600 font-sans normal-case">Optional</span>
+                    <span className="text-zinc-400 text-xs normal-case">Optional</span>
                   </label>
                   <input
                     type="password"
                     value={pinPassword}
                     onChange={(e) => setPinPassword(e.target.value)}
                     placeholder="Passphrase or PIN (if set during creation)"
-                    className="w-full px-3.5 py-2 bg-[#0a0b0e] border border-neutral-800 focus:border-zinc-500 rounded-xl text-xs text-zinc-100 placeholder-zinc-700 outline-none transition"
+                    className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs text-zinc-100 placeholder-zinc-600 outline-none transition"
                   />
                 </div>
 
@@ -799,7 +806,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                       setError(null);
                       setRestoreStep('select_source');
                     }}
-                    className="py-2.5 px-4 bg-[#14161d] hover:bg-[#1a1c24] text-zinc-300 font-medium rounded-xl text-xs transition border border-neutral-800 flex items-center justify-center gap-1"
+                    className="py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium rounded-xl text-xs transition border border-zinc-700/60 flex items-center justify-center gap-1 focus-ring"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Back</span>
@@ -807,7 +814,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                   <button
                     type="submit"
                     disabled={isInitializing || !localSnapshot || !restoreWords.trim()}
-                    className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-black font-semibold rounded-xl text-xs transition shadow-md tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs transition shadow-sm tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5 focus-ring"
                   >
                     {isInitializing ? (
                       <>
@@ -831,7 +838,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                 <div className="flex items-center justify-between pb-1">
                   <div className="flex items-center gap-2">
                     <Cloud className="w-4 h-4 text-zinc-300" />
-                    <span className="text-xs font-semibold text-white">Restore from Google Drive</span>
+                    <span className="text-xs font-semibold text-zinc-100">Restore from Google Drive</span>
                   </div>
                   <button
                     type="button"
@@ -841,7 +848,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                       setGdriveBackups([]);
                       setRestoreStep('select_source');
                     }}
-                    className="text-[11px] text-zinc-400 hover:text-zinc-200"
+                    className="text-xs text-zinc-400 hover:text-zinc-200 transition"
                   >
                     Change Source
                   </button>
@@ -852,14 +859,14 @@ export const VaultOnboarding: React.FC<Props> = ({
                   <form onSubmit={handleScanDrive} className="space-y-3">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                        <label className="text-xs font-medium text-zinc-300">
                           Google OAuth Access Token
                         </label>
                         <a
                           href="https://developers.google.com/oauthplayground/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 hover:underline"
+                          className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 hover:underline focus-ring rounded"
                         >
                           <span>OAuth Playground</span>
                           <ExternalLink className="w-3 h-3" />
@@ -871,57 +878,79 @@ export const VaultOnboarding: React.FC<Props> = ({
                         value={gdriveToken}
                         onChange={(e) => handleTokenChange(e.target.value)}
                         placeholder="ya29.a0..."
-                        className="w-full px-3 py-2 bg-[#0a0b0e] border border-neutral-800 focus:border-zinc-500 rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-700 outline-none transition"
+                        className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-600 outline-none transition"
                       />
 
                       {/* Collapsible How-To Guide */}
-                      <div className="rounded-xl border border-neutral-800/90 bg-[#0c0d12] p-3 text-xs space-y-2">
+                      <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3 text-xs space-y-2">
                         <button
                           type="button"
                           onClick={() => setShowTokenHelp(!showTokenHelp)}
                           className="w-full flex items-center justify-between text-zinc-300 hover:text-white font-medium text-left"
                         >
-                          <span className="flex items-center gap-1.5 text-[11px]">
+                          <span className="flex items-center gap-1.5 text-xs">
                             <HelpCircle className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
                             <span>How to get a Google OAuth token (1 minute guide)</span>
                           </span>
-                          <span className="text-[10px] text-zinc-500 font-mono">
+                          <span className="text-xs text-zinc-400 font-mono">
                             {showTokenHelp ? 'Hide' : 'View steps'}
                           </span>
                         </button>
 
                         {showTokenHelp && (
-                          <ol className="list-decimal list-inside text-[11px] text-zinc-400 space-y-1.5 pt-2 border-t border-neutral-800/80 leading-relaxed">
-                            <li>
-                              Open the{' '}
-                              <a
-                                href="https://developers.google.com/oauthplayground/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-emerald-400 hover:underline font-medium inline-flex items-center gap-0.5"
-                              >
-                                Google OAuth 2.0 Playground
-                                <ExternalLink className="w-2.5 h-2.5" />
-                              </a>.
-                            </li>
-                            <li>
-                              In <strong>Step 1</strong>, scroll down to{' '}
-                              <strong className="text-zinc-200">Drive API v3</strong> and check{' '}
-                              <code className="text-zinc-200 bg-zinc-800 px-1 py-0.5 rounded text-[10px]">
-                                https://www.googleapis.com/auth/drive.file
-                              </code>.
-                            </li>
-                            <li>
-                              Click <strong className="text-zinc-200">Authorize APIs</strong> and sign in with your Google account.
-                            </li>
-                            <li>
-                              In <strong>Step 2</strong>, click{' '}
-                              <strong className="text-zinc-200">Exchange authorization code for tokens</strong>.
-                            </li>
-                            <li>
-                              Copy the <strong className="text-emerald-300">Access token</strong> (starts with <code className="text-zinc-200">ya29...</code>) and paste it into the field above.
-                            </li>
-                          </ol>
+                          <div className="space-y-2 pt-2 border-t border-zinc-800/80 leading-relaxed text-zinc-400 text-xs">
+                            <ol className="list-decimal list-inside space-y-2">
+                              <li>
+                                Open the{' '}
+                                <a
+                                  href="https://developers.google.com/oauthplayground/"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-emerald-400 hover:underline font-medium inline-flex items-center gap-0.5"
+                                >
+                                  Google OAuth 2.0 Playground
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                </a>.
+                              </li>
+                              <li className="space-y-1.5">
+                                <div>
+                                  In <strong>Step 1</strong>, authorize the Drive scope:
+                                </div>
+                                <div className="flex items-center gap-2 p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg">
+                                  <code className="text-zinc-200 text-xs font-mono flex-1 truncate">
+                                    https://www.googleapis.com/auth/drive.file
+                                  </code>
+                                  <button
+                                    type="button"
+                                    onClick={handleCopyScope}
+                                    className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs rounded transition flex items-center gap-1 shrink-0"
+                                  >
+                                    {copiedScope ? (
+                                      <>
+                                        <Check className="w-3 h-3 text-emerald-400" />
+                                        <span>Copied</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="w-3 h-3" />
+                                        <span>Copy Scope</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </li>
+                              <li>
+                                Click <strong className="text-zinc-200">Authorize APIs</strong> and sign in with your Google account.
+                              </li>
+                              <li>
+                                In <strong>Step 2</strong>, click{' '}
+                                <strong className="text-zinc-200">Exchange authorization code for tokens</strong>.
+                              </li>
+                              <li>
+                                Copy the <strong className="text-emerald-300">Access token</strong> (starts with <code className="text-zinc-200 font-mono">ya29...</code>) and paste it into the field above.
+                              </li>
+                            </ol>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -929,7 +958,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                     <button
                       type="submit"
                       disabled={isLoadingGdrive || !gdriveToken.trim()}
-                      className="w-full py-2.5 px-4 bg-white hover:bg-zinc-100 text-zinc-950 font-semibold rounded-xl text-xs transition shadow-md tactile-btn flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:pointer-events-none"
+                      className="w-full py-2.5 px-4 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs transition shadow-sm tactile-btn flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:pointer-events-none focus-ring"
                     >
                       {isLoadingGdrive ? (
                         <>
@@ -952,7 +981,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                           setError(null);
                           setRestoreStep('select_source');
                         }}
-                        className="w-full py-2.5 px-4 bg-[#14161d] hover:bg-[#1a1c24] text-zinc-300 font-medium rounded-xl text-xs transition border border-neutral-800 flex items-center justify-center gap-1.5"
+                        className="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium rounded-xl text-xs transition border border-zinc-700/60 flex items-center justify-center gap-1.5 focus-ring"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
                         <span>Back to Backup Sources</span>
@@ -965,14 +994,14 @@ export const VaultOnboarding: React.FC<Props> = ({
                 {!selectedGdriveFile && gdriveBackups.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                      <span className="text-xs font-medium text-zinc-300">
                         Available Backups ({gdriveBackups.length})
                       </span>
                       <button
                         type="button"
                         onClick={() => scanGoogleDriveForBackups(gdriveToken)}
                         disabled={isLoadingGdrive}
-                        className="text-[11px] text-zinc-400 hover:text-zinc-200 flex items-center gap-1"
+                        className="text-xs text-zinc-400 hover:text-zinc-200 flex items-center gap-1 focus-ring rounded"
                       >
                         <RefreshCw className={`w-3 h-3 ${isLoadingGdrive ? 'animate-spin' : ''}`} />
                         <span>Refresh</span>
@@ -987,18 +1016,22 @@ export const VaultOnboarding: React.FC<Props> = ({
                             setError(null);
                             setSelectedGdriveFile(file);
                           }}
-                          className="p-3 bg-[#12141a] hover:bg-zinc-800/80 border border-neutral-800 hover:border-zinc-600 rounded-xl cursor-pointer transition flex items-center justify-between group"
+                          className="p-3 bg-zinc-950 hover:bg-zinc-800/80 border border-zinc-800 hover:border-zinc-700 rounded-xl cursor-pointer transition flex items-center justify-between group focus-ring"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') setSelectedGdriveFile(file);
+                          }}
                         >
                           <div className="overflow-hidden">
-                            <div className="text-xs font-medium text-white truncate max-w-[240px] group-hover:text-zinc-100">
+                            <div className="text-xs font-medium text-zinc-100 truncate max-w-[240px] group-hover:text-white">
                               {file.name}
                             </div>
-                            <div className="text-[10px] text-zinc-400 font-mono">
+                            <div className="text-xs text-zinc-400 font-mono">
                               {new Date(file.modifiedTime).toLocaleDateString()}
                               {file.size ? ` · ${(parseInt(file.size) / 1024).toFixed(1)} KB` : ''}
                             </div>
                           </div>
-                          <span className="text-[11px] font-medium text-zinc-300 px-2.5 py-1 rounded-lg bg-zinc-800 border border-zinc-700 group-hover:bg-zinc-700 transition">
+                          <span className="text-xs font-medium text-zinc-300 px-2.5 py-1 rounded-lg bg-zinc-800 border border-zinc-700 group-hover:bg-zinc-700 transition">
                             Select
                           </span>
                         </div>
@@ -1013,7 +1046,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                           setError(null);
                           setGdriveBackups([]);
                         }}
-                        className="w-full py-2.5 px-4 bg-[#14161d] hover:bg-[#1a1c24] text-zinc-300 font-medium rounded-xl text-xs transition border border-neutral-800 flex items-center justify-center gap-1.5"
+                        className="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium rounded-xl text-xs transition border border-zinc-700/60 flex items-center justify-center gap-1.5 focus-ring"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
                         <span>Back</span>
@@ -1025,16 +1058,16 @@ export const VaultOnboarding: React.FC<Props> = ({
                 {/* Sub-step C: Enter 12 Words for Selected Cloud File */}
                 {selectedGdriveFile && (
                   <form onSubmit={handleRestoreFromGdrive} className="space-y-4">
-                    <div className="p-3.5 bg-zinc-900/80 border border-neutral-700/80 rounded-xl flex items-center justify-between">
+                    <div className="p-3.5 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between">
                       <div className="flex items-center space-x-3 overflow-hidden">
-                        <div className="p-2 bg-zinc-800 rounded-lg text-zinc-200">
+                        <div className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-200">
                           <Cloud className="w-4 h-4 text-emerald-400" />
                         </div>
                         <div className="truncate">
-                          <div className="text-xs font-medium text-white truncate max-w-[200px]">
+                          <div className="text-xs font-medium text-zinc-100 truncate max-w-[200px]">
                             {selectedGdriveFile.name}
                           </div>
-                          <div className="text-[10px] font-mono text-zinc-400">
+                          <div className="text-xs font-mono text-zinc-400">
                             {new Date(selectedGdriveFile.modifiedTime).toLocaleDateString()}
                           </div>
                         </div>
@@ -1042,7 +1075,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => setSelectedGdriveFile(null)}
-                        className="text-[11px] text-zinc-400 hover:text-white px-2 py-1 rounded bg-zinc-800 border border-zinc-700"
+                        className="text-xs text-zinc-300 hover:text-white px-2.5 py-1 rounded-lg bg-zinc-800 border border-zinc-700 focus-ring"
                       >
                         Change
                       </button>
@@ -1051,14 +1084,14 @@ export const VaultOnboarding: React.FC<Props> = ({
                     {/* 12 Recovery Words */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                        <label className="text-xs font-medium text-zinc-300">
                           Enter 12-Word Recovery Phrase
                         </label>
                         <span
-                          className={`text-[10px] font-mono ${
+                          className={`text-xs font-mono ${
                             restoreWordCount === 12
                               ? 'text-emerald-400 font-semibold'
-                              : 'text-zinc-500'
+                              : 'text-zinc-400'
                           }`}
                         >
                           {restoreWordCount === 12 ? '12 / 12 words ✓' : `${restoreWordCount} / 12 words`}
@@ -1070,22 +1103,22 @@ export const VaultOnboarding: React.FC<Props> = ({
                         value={restoreWords}
                         onChange={(e) => setRestoreWords(e.target.value)}
                         placeholder="Enter the 12 words separated by spaces..."
-                        className="w-full p-3 bg-[#0a0b0e] border border-neutral-800 focus:border-zinc-500 rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-700 outline-none transition resize-none"
+                        className="w-full p-3 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs font-mono text-zinc-100 placeholder-zinc-600 outline-none transition resize-none"
                       />
                     </div>
 
                     {/* Optional Passphrase/PIN */}
                     <div className="space-y-1 pt-1">
-                      <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 flex justify-between">
+                      <label className="text-xs font-medium text-zinc-300 flex justify-between">
                         <span>Unlock Passphrase</span>
-                        <span className="text-zinc-600 font-sans normal-case">Optional</span>
+                        <span className="text-zinc-400 text-xs normal-case">Optional</span>
                       </label>
                       <input
                         type="password"
                         value={pinPassword}
                         onChange={(e) => setPinPassword(e.target.value)}
                         placeholder="Passphrase or PIN (if configured)"
-                        className="w-full px-3.5 py-2 bg-[#0a0b0e] border border-neutral-800 focus:border-zinc-500 rounded-xl text-xs text-zinc-100 placeholder-zinc-700 outline-none transition"
+                        className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs text-zinc-100 placeholder-zinc-600 outline-none transition"
                       />
                     </div>
 
@@ -1093,7 +1126,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => setSelectedGdriveFile(null)}
-                        className="py-2.5 px-4 bg-[#14161d] hover:bg-[#1a1c24] text-zinc-300 font-medium rounded-xl text-xs transition border border-neutral-800 flex items-center justify-center gap-1"
+                        className="py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium rounded-xl text-xs transition border border-zinc-700/60 flex items-center justify-center gap-1 focus-ring"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
                         <span>Back</span>
@@ -1101,7 +1134,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                       <button
                         type="submit"
                         disabled={isInitializing || !restoreWords.trim()}
-                        className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-black font-semibold rounded-xl text-xs transition shadow-md tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5"
+                        className="flex-1 py-2.5 px-4 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs transition shadow-sm tactile-btn disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5 focus-ring"
                       >
                         {isInitializing ? (
                           <>

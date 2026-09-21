@@ -103,14 +103,14 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
 
       {vaultState === 'loading' && (
-        <div className="flex-1 flex flex-col items-center justify-center space-y-4 text-slate-100">
+        <div className="flex-1 flex flex-col items-center justify-center space-y-4 text-zinc-100">
           <div className="p-4 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-2xl animate-pulse">
             <MountainIcon className="w-10 h-10 text-zinc-200" />
           </div>
-          <div className="text-sm font-medium text-slate-400">Opening Local Encrypted Storage...</div>
+          <div className="text-sm font-medium text-zinc-400">Opening Local Encrypted Storage...</div>
         </div>
       )}
 

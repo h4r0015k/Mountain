@@ -257,14 +257,16 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             </a>
 
             <button
-              disabled
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 font-medium text-xs cursor-not-allowed select-none"
+              onClick={onLaunchVault}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition-all active:scale-[0.98] shadow-sm"
             >
-              <Lock className="w-3.5 h-3.5 text-zinc-600" />
+              <Lock className="w-3.5 h-3.5 text-zinc-900" />
               <span>Launch Tool</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/50">
-                Soon
-              </span>
+              {hasExistingVault && (
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-200 text-zinc-800">
+                  {vaultItemCount} items
+                </span>
+              )}
             </button>
 
             {/* Mobile Hamburger Button */}
@@ -306,15 +308,27 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <ExternalLink className="w-3.5 h-3.5 text-zinc-500" />
             </a>
 
-            <div className="pt-3 pb-1 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400 font-mono">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span>Runs on your device</span>
+            <div className="pt-3 pb-1 border-t border-zinc-800/80 space-y-2">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onLaunchVault?.();
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-sm transition-all"
+              >
+                <Lock className="w-4 h-4 text-zinc-950" />
+                <span>Launch Password Vault</span>
+              </button>
+              <div className="flex items-center justify-between text-xs text-zinc-400 font-mono px-1">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span>Runs on your device</span>
+                </div>
+                <span className="text-zinc-500 text-[11px]">{hasExistingVault ? `${vaultItemCount} items` : 'Ready'}</span>
               </div>
-              <span className="text-zinc-500 text-[11px]">Vault Coming Soon</span>
             </div>
           </div>
         )}
@@ -350,22 +364,19 @@ export const ShowcaseDashboard: React.FC<Props> = ({
           {/* Action Button Group */}
           <div className="flex flex-wrap items-center gap-3 mb-6 animate-fade-in-delayed-3">
             <button
-              disabled
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 font-medium text-xs sm:text-sm cursor-not-allowed select-none shadow-sm"
+              onClick={onLaunchVault}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs sm:text-sm transition-all active:scale-[0.98] shadow-sm"
             >
-              <Lock className="w-4 h-4 text-zinc-600" />
-              <span>Launch Password Vault</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/50">
-                Coming Soon
-              </span>
+              <Lock className="w-4 h-4 text-zinc-950" />
+              <span>{hasExistingVault ? 'Unlock Password Vault' : 'Launch Password Vault'}</span>
+              <ArrowRight className="w-3.5 h-3.5 text-zinc-700" />
             </button>
 
             <a
               href="#how-it-works"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs sm:text-sm transition-all active:scale-[0.98] shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800/80 border border-zinc-800 text-zinc-200 font-medium text-xs sm:text-sm transition-colors"
             >
               <span>See How It Works</span>
-              <ArrowRight className="w-3.5 h-3.5 text-zinc-700" />
             </a>
 
             <a

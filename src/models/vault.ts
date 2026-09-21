@@ -64,6 +64,7 @@ export interface VaultSnapshot {
   vaultId: string;
   salt: string; // Base64 16-byte KDF salt
   kdfIterations: number; // 600,000 rounds
+  authCheck?: EncryptedVaultPayload; // Optional canary payload to rapidly verify decryption key
   items: VaultItem[];
   createdAt: number;
   updatedAt: number;

@@ -735,18 +735,18 @@ export const VaultDashboard: React.FC<Props> = ({
             </div>
 
             {/* Scrollable details body */}
-            <div className="p-5 space-y-4 overflow-y-auto">
+            <div className="p-5 space-y-4 overflow-y-auto min-w-0">
               {/* Username Field */}
               {viewingRecord.secret?.username && (
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <label className="text-xs font-medium text-zinc-300">Username / Email</label>
-                  <div className="flex items-center justify-between p-3 bg-zinc-950 rounded-xl border border-zinc-800">
-                    <span className="font-mono text-sm text-zinc-100 select-all truncate pr-2">
+                  <div className="flex items-center justify-between p-3 bg-zinc-950 rounded-xl border border-zinc-800 gap-2 min-w-0">
+                    <span className="font-mono text-sm text-zinc-100 select-all truncate min-w-0 flex-1">
                       {viewingRecord.secret.username}
                     </span>
                     <button
                       onClick={() => copyToClipboard(viewingRecord.secret.username, 'modal-user', 'Username copied')}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs text-zinc-300 transition focus-ring"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs text-zinc-300 transition focus-ring shrink-0"
                     >
                       {copiedId === 'modal-user' ? (
                         <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -761,15 +761,15 @@ export const VaultDashboard: React.FC<Props> = ({
 
               {/* Password Field */}
               {viewingRecord.secret?.password && (
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <label className="text-xs font-medium text-zinc-300">Password</label>
-                  <div className="flex items-center justify-between p-3 bg-zinc-950 rounded-xl border border-zinc-800">
-                    <span className="font-mono text-sm text-zinc-100 tracking-wider select-all truncate pr-2">
+                  <div className="flex items-center justify-between p-3 bg-zinc-950 rounded-xl border border-zinc-800 gap-2 min-w-0">
+                    <span className="font-mono text-sm text-zinc-100 tracking-wider select-all truncate min-w-0 flex-1">
                       {revealedPasswords[viewingRecord.item.id]
                         ? viewingRecord.secret.password
                         : '••••••••••••••••••••'}
                     </span>
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center space-x-1.5 shrink-0">
                       <button
                         onClick={() => togglePasswordVisibility(viewingRecord.item.id)}
                         className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-zinc-800 transition focus-ring"
@@ -799,7 +799,7 @@ export const VaultDashboard: React.FC<Props> = ({
 
               {/* Improved 2FA Authenticator Display */}
               {viewingRecord.secret?.totpSecret && (
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <label className="text-xs font-medium text-zinc-300">Two-Factor Authentication</label>
                   {totpCodes[viewingRecord.item.id] ? (
                     <TotpDisplay
@@ -818,9 +818,22 @@ export const VaultDashboard: React.FC<Props> = ({
 
               {/* Notes Field */}
               {viewingRecord.secret?.notes && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-zinc-300">Secure Notes</label>
-                  <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800 text-xs sm:text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-zinc-300">Secure Notes</label>
+                    <button
+                      onClick={() => copyToClipboard(viewingRecord.secret.notes, 'modal-notes', 'Notes copied')}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs text-zinc-300 transition focus-ring"
+                    >
+                      {copiedId === 'modal-notes' ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      <span>{copiedId === 'modal-notes' ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                  <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800 text-xs sm:text-sm text-zinc-200 whitespace-pre-wrap break-words break-all [overflow-wrap:anywhere] max-h-60 overflow-y-auto leading-relaxed select-text">
                     {viewingRecord.secret.notes}
                   </div>
                 </div>
@@ -901,17 +914,17 @@ export const VaultDashboard: React.FC<Props> = ({
           />
 
           {/* Right-docked Drawer Window */}
-          <div className="relative z-10 w-full sm:w-[450px] max-w-[92vw] h-full bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col">
+          <div className="relative z-10 w-full sm:w-[450px] max-w-[92vw] h-full bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col min-w-0">
             <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-100">
+              <div className="flex items-center space-x-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-100 shrink-0">
                   {editingItemId ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                 </div>
-                <div>
-                  <h3 id="drawer-title" className="text-sm sm:text-base font-semibold text-zinc-100">
+                <div className="min-w-0">
+                  <h3 id="drawer-title" className="text-sm sm:text-base font-semibold text-zinc-100 truncate">
                     {editingItemId ? 'Edit Record' : 'New Record'}
                   </h3>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-zinc-400 truncate">
                     {editingItemId ? 'Update stored encrypted credentials' : 'Encrypted with AES-256-GCM'}
                   </p>
                 </div>
@@ -921,7 +934,7 @@ export const VaultDashboard: React.FC<Props> = ({
                   setShowAddDrawer(false);
                   setDrawerError(null);
                 }}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors focus-ring"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors focus-ring shrink-0"
                 title="Close drawer"
                 aria-label="Close drawer"
               >
@@ -936,7 +949,7 @@ export const VaultDashboard: React.FC<Props> = ({
               </div>
             )}
 
-            <form onSubmit={handleSaveItem} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+            <form onSubmit={handleSaveItem} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 min-w-0">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-zinc-300">Record Title</label>
                 <input
@@ -1032,14 +1045,14 @@ export const VaultDashboard: React.FC<Props> = ({
                 </p>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-0">
                 <label className="text-xs font-medium text-zinc-300">Notes (Optional)</label>
                 <textarea
                   rows={3}
                   value={newItemNotes}
                   onChange={(e) => setNewItemNotes(e.target.value)}
                   placeholder="Recovery codes, security questions, account numbers..."
-                  className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs sm:text-sm text-zinc-200 placeholder-zinc-500 outline-none resize-none font-sans leading-relaxed"
+                  className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs sm:text-sm text-zinc-200 placeholder-zinc-500 outline-none resize-y min-h-[80px] max-h-60 font-sans leading-relaxed break-words break-all [overflow-wrap:anywhere]"
                 />
               </div>
 

@@ -16,6 +16,7 @@ export const App: React.FC = () => {
   const [currentSnapshot, setCurrentSnapshot] = useState<VaultSnapshot | null>(null);
   const [activeKey, setActiveKey] = useState<CryptoKey | null>(null);
   const [decryptedItems, setDecryptedItems] = useState<DecryptedRecord[]>([]);
+  const [onboardingInitialMode, setOnboardingInitialMode] = useState<'choice' | 'restore'>('choice');
 
   // Check IndexedDB on mount
   useEffect(() => {
@@ -115,7 +116,11 @@ export const App: React.FC = () => {
 
       {vaultState === 'needs_setup' && (
         <div className="flex-1">
-          <VaultOnboarding onVaultReady={handleVaultReady} />
+          <VaultOnboarding
+            initialMode={onboardingInitialMode}
+            onVaultReady={handleVaultReady}
+            onCancel={currentSnapshot ? () => setVaultState('locked') : undefined}
+          />
         </div>
       )}
 
@@ -125,6 +130,10 @@ export const App: React.FC = () => {
             snapshot={currentSnapshot}
             onUnlocked={handleUnlocked}
             onResetVault={handleResetVault}
+            onRestoreBackup={() => {
+              setOnboardingInitialMode('restore');
+              setVaultState('needs_setup');
+            }}
           />
         </div>
       )}

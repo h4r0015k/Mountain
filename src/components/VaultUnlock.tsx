@@ -8,9 +8,10 @@ interface Props {
   snapshot: VaultSnapshot;
   onUnlocked: (key: CryptoKey, masterSecret: string) => void;
   onResetVault: () => void;
+  onRestoreBackup?: () => void;
 }
 
-export const VaultUnlock: React.FC<Props> = ({ snapshot, onUnlocked, onResetVault }) => {
+export const VaultUnlock: React.FC<Props> = ({ snapshot, onUnlocked, onResetVault, onRestoreBackup }) => {
   const [passphrase, setPassphrase] = useState('');
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +86,17 @@ export const VaultUnlock: React.FC<Props> = ({ snapshot, onUnlocked, onResetVaul
         </form>
 
         <div className="pt-2 border-t border-neutral-800/60 flex items-center justify-between text-[11px] text-zinc-500">
-          <span>Trouble unlocking?</span>
+          {onRestoreBackup ? (
+            <button
+              type="button"
+              onClick={onRestoreBackup}
+              className="text-zinc-400 hover:text-zinc-200 transition"
+            >
+              Restore Backup
+            </button>
+          ) : (
+            <span>Trouble unlocking?</span>
+          )}
           {!showConfirmReset ? (
             <button
               type="button"

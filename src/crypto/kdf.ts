@@ -19,11 +19,13 @@ export interface DerivedKeyBundle {
  * @param passphrase - The master password or 12-24 word BIP-39 seed string
  * @param salt - Cryptographically random 16-byte Uint8Array salt
  * @param iterations - Computational iteration count (defaults to 600,000 rounds)
+ * @param extractable - Whether raw key bytes can be exported via crypto.subtle.exportKey. Defaults to false for defense-in-depth against in-memory extraction.
  */
 export async function deriveVaultKey(
   passphrase: string,
   salt: Uint8Array,
-  iterations = 600_000
+  iterations = 600_000,
+  extractable = false
 ): Promise<DerivedKeyBundle> {
   if (!passphrase || passphrase.trim().length === 0) {
     throw new Error("Passphrase cannot be empty");
@@ -57,18 +59,27 @@ export async function deriveVaultKey(
       name: "AES-GCM",
       length: 256
     },
-    true, // extractable for testing/export verification
+    extractable, // false by default: prevents any in-memory extraction of raw symmetric key bytes
     ["encrypt", "decrypt"]
   );
 
-  return { key, iterations };
+  return {
+    key,
+    iterations
+  };
 }
 
 /**
- * Generates a cryptographically secure random 16-byte salt using CSPRNG.
+ * Generates a cryptographically strong random salt using CSPRNG.
+ * Default length: 16 bytes (128 bits), compliant with NIST SP 800-132.
+ *
+ * @param length - Length in bytes (defaults to 16)
  */
-export function generateSalt(byteLength = 16): Uint8Array {
-  const salt = new Uint8Array(byteLength);
+export function generateSalt(length = 16): Uint8Array {
+  if (length < 16) {
+    throw new Error("Salt length must be at least 16 bytes");
+  }
+  const salt = new Uint8Array(length);
   crypto.getRandomValues(salt);
   return salt;
 }

@@ -603,6 +603,7 @@ export const VaultDashboard: React.FC<Props> = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {filteredItems.map(({ item, secret }) => {
+              const isSelected = viewingRecord?.item.id === item.id;
               return (
                 <div
                   key={item.id}
@@ -610,7 +611,11 @@ export const VaultDashboard: React.FC<Props> = ({
                     setConfirmDeleteId(null);
                     setViewingRecord({ item, secret });
                   }}
-                  className="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-xl p-3 sm:p-3.5 transition group cursor-pointer hover:bg-zinc-850/80 flex items-center justify-between focus-ring"
+                  className={`bg-zinc-900 border ${
+                    isSelected
+                      ? 'border-zinc-500 bg-zinc-850 ring-1 ring-zinc-500/30'
+                      : 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850/80'
+                  } rounded-xl p-3 sm:p-3.5 transition group cursor-pointer flex items-center justify-between focus-ring`}
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -667,38 +672,38 @@ export const VaultDashboard: React.FC<Props> = ({
         )}
       </main>
 
-      {/* VIEW RECORD DETAIL MODAL */}
+      {/* VIEW RECORD DETAIL RIGHT SIDE PANE */}
       {viewingRecord && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="record-detail-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 animate-fade-in"
+          className="fixed inset-0 z-50 flex justify-end animate-fade-in"
         >
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity"
             onClick={() => {
               setViewingRecord(null);
               setConfirmDeleteId(null);
             }}
           />
 
-          {/* Modal Card */}
-          <div className="relative z-10 w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          {/* Right-docked Side Pane */}
+          <div className="relative z-10 w-full sm:w-[480px] max-w-[92vw] h-full bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col min-w-0">
             {/* Header */}
-            <div className="p-5 border-b border-zinc-800 flex items-start justify-between bg-zinc-900">
-              <div className="flex items-center space-x-3.5 min-w-0">
+            <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-900 shrink-0">
+              <div className="flex items-center space-x-3 min-w-0">
                 <FaviconBadge
                   url={viewingRecord.secret?.url}
                   type={viewingRecord.item.type}
-                  size="lg"
+                  size="md"
                 />
                 <div className="min-w-0">
-                  <h3 id="record-detail-title" className="text-base sm:text-lg font-bold text-zinc-100 truncate">
+                  <h3 id="record-detail-title" className="text-sm sm:text-base font-semibold text-zinc-100 truncate">
                     {viewingRecord.item.title}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs font-mono uppercase px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60">
                       {viewingRecord.item.type.replace('_', ' ')}
                     </span>
@@ -727,7 +732,7 @@ export const VaultDashboard: React.FC<Props> = ({
                   setViewingRecord(null);
                   setConfirmDeleteId(null);
                 }}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition focus-ring"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition focus-ring shrink-0"
                 aria-label="Close record detail"
               >
                 <X className="w-5 h-5" />
@@ -735,7 +740,7 @@ export const VaultDashboard: React.FC<Props> = ({
             </div>
 
             {/* Scrollable details body */}
-            <div className="p-5 space-y-4 overflow-y-auto min-w-0">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 min-w-0">
               {/* Username Field */}
               {viewingRecord.secret?.username && (
                 <div className="space-y-1.5 min-w-0">
@@ -847,7 +852,7 @@ export const VaultDashboard: React.FC<Props> = ({
             </div>
 
             {/* Footer Actions */}
-            <div className="p-4 border-t border-zinc-800 bg-zinc-900 flex items-center justify-between">
+            <div className="p-4 border-t border-zinc-800 bg-zinc-900 flex items-center justify-between shrink-0">
               {confirmDeleteId === viewingRecord.item.id ? (
                 <div className="flex items-center space-x-2">
                   <button

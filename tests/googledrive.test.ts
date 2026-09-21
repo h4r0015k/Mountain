@@ -116,6 +116,106 @@ describe('Mountain Backup & Recovery Subsystem - Google Drive REST Adapter', () 
       expect(capturedBody).toContain('"parents":["appDataFolder"]');
     });
 
+    it('automatically falls back to drive storage when appDataFolder returns 403 insufficientScopes', async () => {
+      let callCount = 0;
+      let capturedBodies: string[] = [];
+
+      const mockFetch: typeof fetch = async (_input, init) => {
+        callCount++;
+        const body = (init?.body as string) || '';
+        capturedBodies.push(body);
+
+        if (callCount === 1) {
+          // First attempt to appDataFolder returns 403 insufficientScopes
+          return {
+            ok: false,
+            status: 403,
+            text: async () =>
+              JSON.stringify({
+                error: {
+                  code: 403,
+                  message: 'The granted scopes do not allow use of the Application Data folder.',
+                  errors: [
+                    {
+                      message: 'The granted scopes do not allow use of the Application Data folder.',
+                      reason: 'insufficientScopes',
+                    },
+                  ],
+                },
+              }),
+          } as Response;
+        }
+
+        // Second attempt to standard drive succeeds
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 'gdrive_fallback_id_456',
+            name: 'mountain-vault-backup.json',
+          }),
+        } as Response;
+      };
+
+      const client = new GoogleDriveClient({ fetchFn: mockFetch });
+      const result = await client.uploadFile(mockAccessToken, testSnapshot);
+
+      expect(callCount).toBe(2);
+      expect(capturedBodies[0]).toContain('"parents":["appDataFolder"]');
+      expect(capturedBodies[1]).not.toContain('"parents":["appDataFolder"]');
+      expect(result.id).toBe('gdrive_fallback_id_456');
+    });
+
+    it('automatically falls back to drive space in listBackups when appDataFolder returns 403', async () => {
+      let callCount = 0;
+      let queriedUrls: string[] = [];
+
+      const mockFetch: typeof fetch = async (input) => {
+        callCount++;
+        queriedUrls.push(input.toString());
+
+        if (callCount === 1) {
+          return {
+            ok: false,
+            status: 403,
+            text: async () =>
+              JSON.stringify({
+                error: {
+                  code: 403,
+                  message: 'The granted scopes do not allow use of the Application Data folder.',
+                  errors: [{ reason: 'insufficientScopes' }],
+                },
+              }),
+          } as Response;
+        }
+
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            files: [
+              {
+                id: 'file_in_drive_1',
+                name: 'mountain-vault-backup-test.json',
+                modifiedTime: '2026-09-21T12:00:00.000Z',
+                size: '1024',
+                mimeType: 'application/json',
+              },
+            ],
+          }),
+        } as Response;
+      };
+
+      const client = new GoogleDriveClient({ fetchFn: mockFetch });
+      const files = await client.listBackups(mockAccessToken, { folder: 'appDataFolder' });
+
+      expect(callCount).toBe(2);
+      expect(queriedUrls[0]).toContain('spaces=appDataFolder');
+      expect(queriedUrls[1]).toContain('spaces=drive');
+      expect(files.length).toBe(1);
+      expect(files[0].id).toBe('file_in_drive_1');
+    });
+
     it('downloads and parses snapshot from Google Drive with alt=media parameter', async () => {
       let capturedUrl = '';
       let capturedHeaders: Record<string, string> = {};

@@ -4,6 +4,7 @@ import { encryptVaultRecord } from '../crypto/vault.js';
 import { saveVaultSnapshot } from '../storage/indexeddb.js';
 import { generateTOTP } from '../crypto/totp.js';
 import { PasswordGeneratorModal } from './PasswordGeneratorModal';
+import { VaultBackupModal } from './VaultBackupModal';
 import { MountainIcon } from './ShowcaseDashboard.js';
 import {
   Lock,
@@ -24,7 +25,8 @@ import {
   KeyRound,
   X,
   Pencil,
-  ShieldCheck
+  ShieldCheck,
+  DownloadCloud
 } from 'lucide-react';
 
 export interface DecryptedRecord {
@@ -225,6 +227,7 @@ export const VaultDashboard: React.FC<Props> = ({
   const [showAddDrawer, setShowAddDrawer] = useState(false);
   const [viewingRecord, setViewingRecord] = useState<DecryptedRecord | null>(null);
   const [showGenerator, setShowGenerator] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -443,6 +446,14 @@ export const VaultDashboard: React.FC<Props> = ({
           </div>
 
           <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowBackupModal(true)}
+              className="flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-medium border border-neutral-800 transition"
+              title="Backup Vault"
+            >
+              <DownloadCloud className="w-3.5 h-3.5 text-zinc-400" />
+              <span className="hidden sm:inline">Backup</span>
+            </button>
             <button
               onClick={() => setShowGenerator(true)}
               className="hidden sm:flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-medium border border-neutral-800 transition"
@@ -920,6 +931,13 @@ export const VaultDashboard: React.FC<Props> = ({
           setNewItemPassword(pwd);
           setShowGenerator(false);
         }}
+      />
+
+      {/* Encrypted Vault Backup Modal */}
+      <VaultBackupModal
+        isOpen={showBackupModal}
+        onClose={() => setShowBackupModal(false)}
+        snapshot={snapshot}
       />
 
       {/* Sleek Mobile Bottom Dock */}

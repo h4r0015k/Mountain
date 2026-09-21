@@ -47,47 +47,66 @@ export class GoogleDriveClient {
       throw new Error('Google Drive access token is required for upload.');
     }
 
-    const folder = options?.folder || 'appDataFolder';
+    const initialFolder = options?.folder || 'appDataFolder';
     const idPrefix = snapshot.vaultId ? snapshot.vaultId.slice(0, 8) : 'vault';
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const fileName = options?.customName || `mountain-vault-backup-${idPrefix}-${timestamp}.json`;
 
-    const metadata: Record<string, unknown> = {
-      name: fileName,
-      mimeType: 'application/json',
-      description: 'Mountain Password Manager encrypted vault snapshot',
+    const sendUpload = async (folder: 'appDataFolder' | 'drive') => {
+      const metadata: Record<string, unknown> = {
+        name: fileName,
+        mimeType: 'application/json',
+        description: 'Mountain Password Manager encrypted vault snapshot',
+      };
+
+      if (folder === 'appDataFolder') {
+        metadata.parents = ['appDataFolder'];
+      }
+
+      const boundary = `-------MountainBoundary${Date.now().toString(16)}`;
+      const delimiter = `\r\n--${boundary}\r\n`;
+      const closeDelimiter = `\r\n--${boundary}--`;
+
+      const jsonContent = JSON.stringify(snapshot, null, 2);
+
+      const multipartRequestBody =
+        delimiter +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(metadata) +
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        jsonContent +
+        closeDelimiter;
+
+      return await this.fetchFn(
+        `${GOOGLE_DRIVE_UPLOAD_BASE}/files?uploadType=multipart&fields=id,name,modifiedTime,size,mimeType`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': `multipart/related; boundary=${boundary}`,
+          },
+          body: multipartRequestBody,
+        }
+      );
     };
 
-    if (folder === 'appDataFolder') {
-      metadata.parents = ['appDataFolder'];
-    }
+    let response = await sendUpload(initialFolder);
 
-    const boundary = `-------MountainBoundary${Date.now().toString(16)}`;
-    const delimiter = `\r\n--${boundary}\r\n`;
-    const closeDelimiter = `\r\n--${boundary}--`;
-
-    const jsonContent = JSON.stringify(snapshot, null, 2);
-
-    const multipartRequestBody =
-      delimiter +
-      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-      JSON.stringify(metadata) +
-      delimiter +
-      'Content-Type: application/json\r\n\r\n' +
-      jsonContent +
-      closeDelimiter;
-
-    const response = await this.fetchFn(
-      `${GOOGLE_DRIVE_UPLOAD_BASE}/files?uploadType=multipart&fields=id,name,modifiedTime,size,mimeType`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': `multipart/related; boundary=${boundary}`,
-        },
-        body: multipartRequestBody,
+    // If appDataFolder was attempted but the granted scopes don't allow it (e.g. user selected drive.file scope)
+    if (!response.ok && initialFolder === 'appDataFolder' && response.status === 403) {
+      const errorText = await response.text().catch(() => '');
+      if (
+        errorText.includes('Application Data folder') ||
+        errorText.includes('insufficientScopes') ||
+        errorText.includes('appDataFolder')
+      ) {
+        // Transparently fallback to uploading to the user's standard Drive storage
+        response = await sendUpload('drive');
+      } else {
+        throw new Error(`Google Drive upload failed (${response.status}): ${errorText || response.statusText}`);
       }
-    );
+    }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
@@ -176,6 +195,16 @@ export class GoogleDriveClient {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
+      if (
+        folder === 'appDataFolder' &&
+        response.status === 403 &&
+        (errorText.includes('Application Data folder') ||
+          errorText.includes('insufficientScopes') ||
+          errorText.includes('appDataFolder'))
+      ) {
+        // Fallback to querying drive space
+        return await this.listBackups(accessToken, { folder: 'drive' });
+      }
       throw new Error(`Failed to list Google Drive backups (${response.status}): ${errorText || response.statusText}`);
     }
 

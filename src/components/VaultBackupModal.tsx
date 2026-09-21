@@ -25,9 +25,15 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   snapshot: VaultSnapshot;
+  onBackupSuccess?: (timestamp: number) => void;
 }
 
-export const VaultBackupModal: React.FC<Props> = ({ isOpen, onClose, snapshot }) => {
+export const VaultBackupModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  snapshot,
+  onBackupSuccess,
+}) => {
   const [destination, setDestination] = useState<'select' | 'local' | 'gdrive'>('select');
   const [mnemonic, setMnemonic] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +97,7 @@ export const VaultBackupModal: React.FC<Props> = ({ isOpen, onClose, snapshot })
       if (result.destination === 'local') {
         triggerLocalDownload(result);
         setSuccessMessage(`Backup successfully downloaded as ${result.filename}`);
+        onBackupSuccess?.(Date.now());
       }
     } catch (err: any) {
       if (err instanceof DecryptionValidationError) {
@@ -134,6 +141,7 @@ export const VaultBackupModal: React.FC<Props> = ({ isOpen, onClose, snapshot })
         setSuccessMessage(
           `Backup successfully uploaded to Google Drive as ${result.fileName}`
         );
+        onBackupSuccess?.(Date.now());
       }
     } catch (err: any) {
       if (err instanceof DecryptionValidationError) {

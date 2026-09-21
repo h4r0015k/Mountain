@@ -21,7 +21,6 @@ import {
   Trash2,
   ExternalLink,
   Sparkles,
-  Database,
   KeyRound,
   X,
   Pencil,
@@ -231,6 +230,29 @@ export const VaultDashboard: React.FC<Props> = ({
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Track last backup timestamp to detect unbacked changes
+  const [lastBackupTime, setLastBackupTime] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem(`mountain_last_backup_${snapshot.vaultId}`);
+      return stored ? parseInt(stored, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const handleBackupSuccess = (timestamp: number) => {
+    setLastBackupTime(timestamp);
+    try {
+      localStorage.setItem(`mountain_last_backup_${snapshot.vaultId}`, String(timestamp));
+    } catch {}
+  };
+
+  const hasUnbackedChanges =
+    snapshot.items.length > 0 &&
+    (lastBackupTime === 0 ||
+      snapshot.updatedAt > lastBackupTime ||
+      snapshot.items.some((item) => (item.updatedAt || item.createdAt || 0) > lastBackupTime));
+
   // Form state for new/editing record
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [newItemType, setNewItemType] = useState<VaultItemType>('LOGIN');
@@ -431,35 +453,30 @@ export const VaultDashboard: React.FC<Props> = ({
             </div>
             <div className="flex items-center space-x-2">
               <span className="font-semibold text-sm tracking-tight text-white">Mountain</span>
-              <div className="hidden sm:flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-neutral-800 text-[10px] text-zinc-400 font-mono">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>AES-256-GCM Local</span>
-              </div>
             </div>
-          </div>
-
-          {/* Sync status indicator */}
-          <div className="flex items-center space-x-1.5 py-1 px-2.5 rounded-md bg-zinc-900/90 border border-neutral-800 text-[11px] text-zinc-400 font-mono">
-            <Database className="w-3 h-3 text-emerald-400 flex-shrink-0" />
-            <span className="hidden sm:inline">IndexedDB Local</span>
-            <span className="sm:hidden">Local</span>
           </div>
 
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowBackupModal(true)}
-              className="flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-medium border border-neutral-800 transition"
-              title="Backup Vault"
+              className={`flex items-center space-x-1.5 py-1.5 px-3 rounded-lg text-xs transition ${
+                hasUnbackedChanges
+                  ? 'bg-rose-950/80 hover:bg-rose-900 text-rose-200 hover:text-white font-semibold border border-rose-600/80 shadow-sm shadow-rose-950/60'
+                  : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-medium border border-neutral-800'
+              }`}
+              title={
+                hasUnbackedChanges
+                  ? 'You have unbacked vault items! Click to backup to local file or Google Drive.'
+                  : 'Backup Vault'
+              }
             >
-              <DownloadCloud className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="hidden sm:inline">Backup</span>
-            </button>
-            <button
-              onClick={() => setShowGenerator(true)}
-              className="hidden sm:flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-medium border border-neutral-800 transition"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Generator</span>
+              {hasUnbackedChanges && (
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+              )}
+              <DownloadCloud
+                className={`w-3.5 h-3.5 ${hasUnbackedChanges ? 'text-rose-400' : 'text-zinc-400'}`}
+              />
+              <span>Backup</span>
             </button>
             <button
               onClick={onLock}
@@ -938,6 +955,7 @@ export const VaultDashboard: React.FC<Props> = ({
         isOpen={showBackupModal}
         onClose={() => setShowBackupModal(false)}
         snapshot={snapshot}
+        onBackupSuccess={handleBackupSuccess}
       />
 
       {/* Sleek Mobile Bottom Dock */}

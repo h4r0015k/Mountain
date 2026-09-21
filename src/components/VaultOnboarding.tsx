@@ -234,6 +234,9 @@ export const VaultOnboarding: React.FC<Props> = ({
       });
 
       await saveVaultSnapshot(result.snapshot);
+      try {
+        localStorage.setItem(`mountain_last_backup_${result.snapshot.vaultId}`, String(Date.now()));
+      } catch {}
       onVaultReady(result.key, result.snapshot, secretToDerive);
     } catch (err: any) {
       if (err instanceof DecryptionValidationError) {
@@ -312,6 +315,9 @@ export const VaultOnboarding: React.FC<Props> = ({
       });
 
       await saveVaultSnapshot(result.snapshot);
+      try {
+        localStorage.setItem(`mountain_last_backup_${result.snapshot.vaultId}`, String(Date.now()));
+      } catch {}
       onVaultReady(result.key, result.snapshot, secretToDerive);
     } catch (err: any) {
       if (err instanceof DecryptionValidationError) {

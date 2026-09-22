@@ -19,7 +19,12 @@ import {
   RefreshCw,
   FolderLock,
   Menu,
-  X
+  X,
+  Puzzle,
+  Download,
+  Sparkles,
+  MousePointerClick,
+  ShieldCheck,
 } from 'lucide-react';
 
 const MATRIX_GLYPHS = '0123456789ABCDEF$#@%&*<>{}[]/?~!=+';
@@ -213,6 +218,12 @@ export const ShowcaseDashboard: React.FC<Props> = ({
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center space-x-1 text-xs text-zinc-400 font-medium">
             <a
+              href="#companion-extension"
+              className="px-3 py-1.5 rounded-md hover:text-white hover:bg-zinc-900/60 transition-colors"
+            >
+              Extension
+            </a>
+            <a
               href="#how-it-works"
               className="px-3 py-1.5 rounded-md hover:text-white hover:bg-zinc-900/60 transition-colors"
             >
@@ -283,6 +294,13 @@ export const ShowcaseDashboard: React.FC<Props> = ({
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-zinc-800/80 bg-[#09090b]/98 backdrop-blur-lg px-4 py-3 space-y-1 animate-fade-in">
+            <a
+              href="#companion-extension"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 transition-colors"
+            >
+              Companion Extension
+            </a>
             <a
               href="#how-it-works"
               onClick={() => setMobileMenuOpen(false)}
@@ -421,6 +439,159 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <div className="text-[11px] font-mono text-zinc-500 uppercase">Cloud Sync</div>
               <div className="text-base font-semibold text-zinc-100 mt-1">Personal Drive</div>
               <div className="text-[11px] text-zinc-500 mt-0.5">Your private Google Drive</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Companion Extension Showcase Section (Second Section) */}
+      <section id="companion-extension" className="py-20 px-4 sm:px-6 border-b border-zinc-800/80 bg-zinc-950/40">
+        <div className="max-w-4xl mx-auto">
+          {/* Section Header */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-2">
+                <Puzzle className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Browser Extension (Unpacked)</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                Autofill logins without copying and pasting
+              </h2>
+              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-xl">
+                Fill your usernames and passwords on any website with a single click. It talks directly to your unlocked Mountain tab and never saves passwords inside the extension itself.
+              </p>
+            </div>
+
+            <div className="flex sm:flex-col items-start sm:items-end gap-1.5 text-xs font-mono text-zinc-500 shrink-0">
+              <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+                Manifest V3
+              </span>
+              <span>Load unpacked in Developer mode</span>
+            </div>
+          </div>
+
+          {/* Features & Visual Preview */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center mb-8">
+            <div className="lg:col-span-7 space-y-3">
+              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
+                    <MousePointerClick className="w-4 h-4 text-zinc-200" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Right-click or press Cmd+Shift+L</h3>
+                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                      Right-click on any username or password field to fill your details, or press <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px] border border-zinc-700">Cmd+Shift+L</kbd> (<kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px] border border-zinc-700">Ctrl+Shift+L</kbd> on Windows/Linux).
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
+                    <Sparkles className="w-4 h-4 text-zinc-200" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Make strong passwords on the fly</h3>
+                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                      Signing up somewhere new? Right-click the password box to create a random 20-character password. It fills the field and copies it to your clipboard.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
+                    <Zap className="w-4 h-4 text-zinc-200" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Works with modern sign-in pages</h3>
+                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                      Websites like Instagram, Google, and GitHub use reactive forms that often ignore basic autofill tools. Mountain triggers the right form events so submit buttons turn on automatically.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Visual Preview */}
+            <div className="lg:col-span-5">
+              <div className="p-4 rounded-xl bg-zinc-900/70 border border-zinc-800 shadow-xl">
+                {/* Browser Tab Mock */}
+                <div className="flex items-center gap-2 pb-2.5 mb-2.5 border-b border-zinc-800 text-[11px] font-mono text-zinc-400">
+                  <div className="flex gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                  </div>
+                  <div className="flex-1 text-center bg-zinc-950 py-0.5 px-3 rounded text-[10px] text-zinc-500 truncate border border-zinc-800/60">
+                    instagram.com/accounts/login
+                  </div>
+                </div>
+
+                {/* Form Simulation */}
+                <div className="space-y-2 my-2">
+                  <div className="p-2 rounded bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 font-mono flex items-center justify-between">
+                    <span>nikhil@example.com</span>
+                    <span className="text-[10px] text-zinc-500">username</span>
+                  </div>
+                  <div className="p-2 rounded bg-zinc-950 border border-emerald-500/40 text-xs text-emerald-400 font-mono flex items-center justify-between">
+                    <span>••••••••••••••••</span>
+                    <span className="text-[10px] text-emerald-400 font-mono">autofilled</span>
+                  </div>
+                </div>
+
+                {/* Mock Context Menu */}
+                <div className="mt-3 p-1.5 rounded-lg bg-zinc-950 border border-zinc-700/80 shadow-lg space-y-1 text-xs">
+                  <div className="px-2 py-1 text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1.5 border-b border-zinc-800">
+                    <MountainIcon className="w-3 h-3 text-zinc-400" />
+                    <span>Mountain</span>
+                  </div>
+                  <div className="px-2 py-1 rounded bg-zinc-900 text-white font-medium flex items-center justify-between text-[11px]">
+                    <span>Fill Username & Password</span>
+                    <kbd className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">Cmd+Shift+L</kbd>
+                  </div>
+                  <div className="px-2 py-1 rounded text-zinc-400 flex items-center gap-1.5 text-[11px]">
+                    <span>Generate Strong Password</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Unpacked Install / Download Box */}
+          <div className="p-5 rounded-xl bg-zinc-900/50 border border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="space-y-0.5 text-center sm:text-left">
+              <div className="text-sm font-semibold text-white">How to load in Chrome, Brave, or Edge</div>
+              <p className="text-xs text-zinc-400">
+                Go to <code className="text-zinc-300 font-mono bg-zinc-800 px-1 py-0.5 rounded text-[11px]">chrome://extensions</code>, turn on Developer mode, and click <strong>Load unpacked</strong>.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+              <button
+                disabled
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-zinc-800/80 text-zinc-500 border border-zinc-700/40 text-xs font-medium cursor-not-allowed opacity-60 select-none"
+                title="Download archive will be available in a future release"
+              >
+                <Download className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Download .zip</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-900 text-zinc-500 border border-zinc-700/60">
+                  Disabled
+                </span>
+              </button>
+
+              <a
+                href="https://github.com/h4r0015k/Mountain/tree/main/companion-extension"
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-medium transition-colors"
+              >
+                <span>View on GitHub</span>
+                <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
+              </a>
             </div>
           </div>
         </div>
@@ -668,6 +839,11 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                 Navigation
               </div>
               <ul className="space-y-2 text-zinc-500">
+                <li>
+                  <a href="#companion-extension" className="hover:text-zinc-300 transition-colors">
+                    Companion Extension
+                  </a>
+                </li>
                 <li>
                   <a href="#how-it-works" className="hover:text-zinc-300 transition-colors">
                     How It Works

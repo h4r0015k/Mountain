@@ -103,4 +103,49 @@ describe("Mountain Domain Models & Vault Lifecycle", () => {
     expect(extractDomain("")).toBeNull();
     expect(extractDomain("not a url")).toBeNull();
   });
+
+  it("constructs, encrypts, and decrypts API keys and Secure Notes", async () => {
+    const apiKeySecret = {
+      serviceName: "OpenAI Platform",
+      apiKey: "sk-proj-test1234567890abcdef",
+      apiSecret: "sec_key_sample987654321",
+      endpointUrl: "https://api.openai.com/v1",
+      notes: "Production key for AI services",
+    };
+
+    const noteSecret = {
+      content: "## Secret Recovery Notes\nServer root password: XYZ",
+    };
+
+    const encApiKey = await encryptVaultRecord(apiKeySecret, masterKey);
+    const encNote = await encryptVaultRecord(noteSecret, masterKey);
+
+    const itemApiKey: VaultItem = {
+      id: "item_api_01",
+      type: "API_KEY",
+      title: "OpenAI Production",
+      favorite: false,
+      createdAt: 1789700000000,
+      updatedAt: 1789700000000,
+      encryptedData: encApiKey,
+    };
+
+    const itemNote: VaultItem = {
+      id: "item_note_01",
+      type: "SECURE_NOTE",
+      title: "Server Credentials",
+      favorite: true,
+      createdAt: 1789700000000,
+      updatedAt: 1789700000000,
+      encryptedData: encNote,
+    };
+
+    const decApiKey = await decryptVaultRecord<typeof apiKeySecret>(itemApiKey.encryptedData, masterKey);
+    expect(decApiKey.apiKey).toBe("sk-proj-test1234567890abcdef");
+    expect(decApiKey.endpointUrl).toBe("https://api.openai.com/v1");
+    expect(decApiKey.notes).toBe("Production key for AI services");
+
+    const decNote = await decryptVaultRecord<typeof noteSecret>(itemNote.encryptedData, masterKey);
+    expect(decNote.content).toContain("## Secret Recovery Notes");
+  });
 });

@@ -18,7 +18,7 @@ export interface LoginFields {
 }
 
 export interface SecureNoteFields {
-  title: string;
+  title?: string;
   content: string; // Markdown supported
 }
 
@@ -28,13 +28,15 @@ export interface CardFields {
   expirationDate: string; // MM/YY
   cvv: string;
   pin?: string;
+  notes?: string;
 }
 
 export interface ApiKeyFields {
-  serviceName: string;
+  serviceName?: string;
   apiKey: string;
   apiSecret?: string;
   endpointUrl?: string;
+  notes?: string;
 }
 
 export type VaultSecretPayload = LoginFields | SecureNoteFields | CardFields | ApiKeyFields;

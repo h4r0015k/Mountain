@@ -12,6 +12,7 @@ import {
 import { encryptVaultRecord } from '../crypto/vault.js';
 import { saveVaultSnapshot } from '../storage/indexeddb.js';
 import { generateTOTP } from '../crypto/totp.js';
+import { createAuthCheckPayload } from '../backup/index.js';
 import { PasswordGeneratorModal } from './PasswordGeneratorModal';
 import { VaultBackupModal } from './VaultBackupModal';
 import { MountainIcon } from './ShowcaseDashboard.js';
@@ -785,8 +786,16 @@ export const VaultDashboard: React.FC<Props> = ({
         updatedItems = [...snapshot.items, newItem];
       }
 
+      let authCheck = snapshot.authCheck;
+      if (!authCheck && activeKey) {
+        try {
+          authCheck = await createAuthCheckPayload(activeKey, snapshot.vaultId);
+        } catch {}
+      }
+
       const updatedSnapshot: VaultSnapshot = {
         ...snapshot,
+        authCheck,
         updatedAt: Date.now(),
         items: updatedItems,
       };

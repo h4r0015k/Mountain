@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { VaultSnapshot } from './models/vault.js';
-import { listVaultSnapshots, deleteVaultSnapshot, loadVaultSnapshot } from './storage/indexeddb.js';
+import { listVaultSnapshots, deleteVaultSnapshot, loadVaultSnapshot, saveVaultSnapshot } from './storage/indexeddb.js';
 import { decryptVaultRecord } from './crypto/vault.js';
+import { verifyVaultKey, createAuthCheckPayload } from './backup/index.js';
 import { VaultOnboarding } from './components/VaultOnboarding';
 import { VaultUnlock } from './components/VaultUnlock';
 import { VaultDashboard, DecryptedRecord } from './components/VaultDashboard';
@@ -48,8 +49,28 @@ export const App: React.FC = () => {
 
   const handleUnlocked = async (key: CryptoKey) => {
     if (!currentSnapshot) return;
+
+    const isValid = await verifyVaultKey(key, currentSnapshot);
+    if (!isValid) {
+      console.error('Unlock aborted: key failed cryptographic verification.');
+      return;
+    }
+
     setActiveKey(key);
     await decryptAllItems(currentSnapshot, key);
+
+    // If legacy snapshot lacks authCheck canary, generate and store it now
+    if (!currentSnapshot.authCheck) {
+      try {
+        const authCheck = await createAuthCheckPayload(key, currentSnapshot.vaultId);
+        const updated = { ...currentSnapshot, authCheck };
+        await saveVaultSnapshot(updated);
+        setCurrentSnapshot(updated);
+      } catch (err) {
+        console.warn('Failed to upgrade snapshot with authCheck canary:', err);
+      }
+    }
+
     setVaultState('unlocked');
   };
 
@@ -62,6 +83,9 @@ export const App: React.FC = () => {
       } catch (err) {
         console.warn(`Failed to decrypt item ${item.id}:`, err);
       }
+    }
+    if (snapshot.items.length > 0 && results.length === 0) {
+      throw new Error('Failed to decrypt any vault items. Master key may be invalid.');
     }
     setDecryptedItems(results);
   };

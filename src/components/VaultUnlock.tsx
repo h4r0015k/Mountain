@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { deriveVaultKey } from '../crypto/kdf.js';
 import { base64ToBytes } from '../crypto/base64.js';
 import { VaultSnapshot } from '../models/vault.js';
+import { verifyVaultKey } from '../backup/index.js';
 import { Lock, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
 
 interface Props {
@@ -34,6 +35,12 @@ export const VaultUnlock: React.FC<Props> = ({ snapshot, onUnlocked, onResetVaul
         saltBytes,
         snapshot.kdfIterations || 600000
       );
+
+      const isValid = await verifyVaultKey(keyBundle.key, snapshot);
+      if (!isValid) {
+        setError('Incorrect master password or recovery phrase.');
+        return;
+      }
 
       onUnlocked(keyBundle.key, passphrase.trim());
     } catch (err: any) {

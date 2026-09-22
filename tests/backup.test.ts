@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { generateMnemonic } from '../src/crypto/mnemonic.js';
 import { deriveVaultKey, generateSalt } from '../src/crypto/kdf.js';
 import { encryptVaultRecord } from '../src/crypto/vault.js';
-import { bytesToBase64 } from '../src/crypto/base64.js';
+import { bytesToBase64, base64ToBytes } from '../src/crypto/base64.js';
 import { VaultSnapshot, VaultItem } from '../src/models/vault.js';
 import {
   backupVault,
@@ -12,6 +12,8 @@ import {
   validateDecryption,
   assertValidMnemonic,
   DecryptionValidationError,
+  verifyVaultKey,
+  createAuthCheckPayload,
 } from '../src/backup/index.js';
 
 describe('Mountain Backup & Recovery Subsystem - Local File & Cryptographic Verification', () => {
@@ -250,4 +252,48 @@ describe('Mountain Backup & Recovery Subsystem - Local File & Cryptographic Veri
       ).rejects.toThrow(DecryptionValidationError);
     });
   });
+
+  describe('Vault Unlock Key Verification (Protection against incorrect password)', () => {
+    let wrongKey: CryptoKey;
+
+    beforeAll(async () => {
+      const wrongBundle = await deriveVaultKey(wrongMnemonic, base64ToBytes(testSnapshot.salt), 10_000);
+      wrongKey = wrongBundle.key;
+    });
+
+    it('returns true when valid key decrypts vault snapshot items', async () => {
+      const isValid = await verifyVaultKey(masterKey, testSnapshot);
+      expect(isValid).toBe(true);
+    });
+
+    it('returns false when incorrect key attempts to decrypt vault snapshot items', async () => {
+      const isValid = await verifyVaultKey(wrongKey, testSnapshot);
+      expect(isValid).toBe(false);
+    });
+
+    it('returns true when valid key decrypts authCheck canary payload', async () => {
+      const authCheck = await createAuthCheckPayload(masterKey, testSnapshot.vaultId);
+      const snapshotWithCanary: VaultSnapshot = {
+        ...testSnapshot,
+        authCheck,
+        items: [], // Even with 0 items
+      };
+
+      const isValid = await verifyVaultKey(masterKey, snapshotWithCanary);
+      expect(isValid).toBe(true);
+    });
+
+    it('returns false when incorrect key attempts to decrypt authCheck canary payload (prevents unlocking empty vault with wrong pass)', async () => {
+      const authCheck = await createAuthCheckPayload(masterKey, testSnapshot.vaultId);
+      const snapshotWithCanary: VaultSnapshot = {
+        ...testSnapshot,
+        authCheck,
+        items: [],
+      };
+
+      const isValid = await verifyVaultKey(wrongKey, snapshotWithCanary);
+      expect(isValid).toBe(false);
+    });
+  });
 });
+

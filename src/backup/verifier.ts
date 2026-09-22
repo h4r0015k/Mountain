@@ -166,3 +166,38 @@ export async function validateDecryption(
   // Since assertValidMnemonic passed, key derivation succeeded
   return { key, verifiedWith: 'mnemonic_only' };
 }
+
+/**
+ * Cryptographically verifies whether a derived CryptoKey can unlock and decrypt the given snapshot.
+ *
+ * Checks in order:
+ * 1. Snapshot `authCheck` canary payload (AES-256-GCM AEAD authentication tag check).
+ * 2. First encrypted vault item payload (`items[0].encryptedData`).
+ *
+ * Returns `true` if decryption succeeds, or `false` if the key is incorrect or data is corrupt.
+ */
+export async function verifyVaultKey(
+  key: CryptoKey,
+  snapshot: VaultSnapshot
+): Promise<boolean> {
+  if (snapshot.authCheck) {
+    try {
+      const auth = await decryptVaultRecord<AuthCheckContent>(snapshot.authCheck, key);
+      return auth && auth.canary === AUTH_CANARY_CONSTANT;
+    } catch {
+      return false;
+    }
+  }
+
+  if (snapshot.items && snapshot.items.length > 0) {
+    try {
+      await decryptVaultRecord(snapshot.items[0].encryptedData, key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Edge case: empty legacy snapshot without canary or items
+  return true;
+}

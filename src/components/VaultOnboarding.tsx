@@ -11,6 +11,7 @@ import {
   GoogleDriveClient,
   GoogleDriveFileMetadata,
   DecryptionValidationError,
+  createAuthCheckPayload,
 } from '../backup/index.js';
 import {
   Copy,
@@ -152,12 +153,14 @@ export const VaultOnboarding: React.FC<Props> = ({
       const saltBase64 = bytesToBase64(salt);
 
       const vaultId = crypto.randomUUID();
+      const authCheck = await createAuthCheckPayload(keyBundle.key, vaultId);
       const newSnapshot: VaultSnapshot = {
         format: 'mountain-vault',
         version: 1,
         vaultId,
         salt: saltBase64,
         kdfIterations: 600000,
+        authCheck,
         items: [],
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -240,6 +243,10 @@ export const VaultOnboarding: React.FC<Props> = ({
         mnemonic: cleanWords,
       });
 
+      if (!result.snapshot.authCheck) {
+        result.snapshot.authCheck = await createAuthCheckPayload(result.key, result.snapshot.vaultId);
+      }
+
       await saveVaultSnapshot(result.snapshot);
       try {
         localStorage.setItem(`mountain_last_backup_${result.snapshot.vaultId}`, String(Date.now()));
@@ -320,6 +327,10 @@ export const VaultOnboarding: React.FC<Props> = ({
         mnemonic: cleanWords,
         accessToken: gdriveToken.trim(),
       });
+
+      if (!result.snapshot.authCheck) {
+        result.snapshot.authCheck = await createAuthCheckPayload(result.key, result.snapshot.vaultId);
+      }
 
       await saveVaultSnapshot(result.snapshot);
       try {

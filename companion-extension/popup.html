@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mountain Companion</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 290px;
+      background: #09090b;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      padding: 14px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #27272a;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .logo svg {
+      width: 18px;
+      height: 18px;
+    }
+    .status-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 500;
+    }
+    .status-online {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-checking {
+      background: rgba(234, 179, 8, 0.15);
+      color: #facc15;
+      border: 1px solid rgba(234, 179, 8, 0.3);
+    }
+    .status-offline {
+      background: rgba(244, 63, 94, 0.15);
+      color: #fb7185;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+    .status-unpaired {
+      background: rgba(161, 161, 170, 0.15);
+      color: #d4d4d8;
+      border: 1px solid rgba(161, 161, 170, 0.3);
+    }
+    .section {
+      margin-top: 12px;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .input-label {
+      font-size: 11px;
+      color: #a1a1aa;
+      font-weight: 500;
+    }
+    .code-input {
+      width: 100%;
+      padding: 8px 10px;
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      color: #ffffff;
+      font-family: monospace;
+      font-size: 14px;
+      text-align: center;
+      letter-spacing: 0.15em;
+      outline: none;
+    }
+    .code-input:focus {
+      border-color: #10b981;
+    }
+    .btn {
+      width: 100%;
+      padding: 8px 12px;
+      background: #f4f4f5;
+      color: #09090b;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+      margin-top: 6px;
+    }
+    .btn:hover {
+      background: #ffffff;
+    }
+    .btn-secondary {
+      background: #27272a;
+      color: #e4e4e7;
+      border: 1px solid #3f3f46;
+    }
+    .btn-secondary:hover {
+      background: #3f3f46;
+    }
+    .btn-danger {
+      background: transparent;
+      color: #fb7185;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.15);
+    }
+    .error-msg {
+      font-size: 11px;
+      color: #fb7185;
+      margin-top: 4px;
+      display: none;
+    }
+    .footer-tip {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #71717a;
+      text-align: center;
+      line-height: 1.4;
+    }
+    .kbd {
+      padding: 1px 4px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 3px;
+      color: #d4d4d8;
+      font-family: monospace;
+      font-size: 10px;
+    }
+    .paired-info {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 11px;
+      color: #a1a1aa;
+      line-height: 1.5;
+    }
+    .paired-info strong {
+      color: #f4f4f5;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 32 32" fill="none" stroke="#f4f4f5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5 L12 17.5" opacity="0.45" />
+        <path d="M16.5 13.5 L21 8.5 L29 25 H22" />
+        <path d="M10.2 25 H3 L12 5 L22 25 H13.8 L13.2 21.2 A 1.8 1.8 0 1 0 10.8 21.2 L10.2 25 Z" />
+      </svg>
+      <span>Mountain</span>
+    </div>
+    <span class="status-badge status-checking" id="conn-status">Checking...</span>
+  </div>
+
+  <!-- Unpaired State: Enter Pairing Code -->
+  <div class="section" id="pairing-section" style="display: none;">
+    <div class="input-group">
+      <label class="input-label" for="pairing-code-input">
+        Enter 6-digit code from Mountain:
+      </label>
+      <input
+        type="text"
+        id="pairing-code-input"
+        class="code-input"
+        placeholder="123456"
+        maxlength="7"
+        autocomplete="off"
+      />
+      <div id="pair-error" class="error-msg"></div>
+      <button type="button" class="btn" id="pair-btn">
+        Authorize & Pair
+      </button>
+    </div>
+    <button type="button" class="btn btn-secondary" id="open-mountain-unpaired-btn" style="margin-top: 8px;">
+      Open Mountain Tab
+    </button>
+  </div>
+
+  <!-- Paired State: Active & Ready -->
+  <div class="section" id="active-section" style="display: none;">
+    <div class="paired-info">
+      <strong>Autofill Active</strong><br />
+      Securely paired with open Mountain tab.
+    </div>
+    <button type="button" class="btn btn-secondary" id="open-mountain-btn" style="margin-top: 8px;">
+      Open Mountain Dashboard
+    </button>
+    <button type="button" class="btn btn-danger" id="unpair-btn" style="margin-top: 8px;">
+      Unpair Extension
+    </button>
+  </div>
+
+  <!-- Offline / Vault Locked State -->
+  <div class="section" id="offline-section" style="display: none;">
+    <p style="font-size: 11px; color: #a1a1aa; line-height: 1.4; margin-bottom: 8px;">
+      Mountain is locked or not open. Open Mountain and unlock your vault to use autofill.
+    </p>
+    <button type="button" class="btn" id="open-mountain-offline-btn">
+      Open & Unlock Mountain
+    </button>
+  </div>
+
+  <div class="footer-tip">
+    Press <span class="kbd">Cmd+Shift+L</span> or right-click to autofill.
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

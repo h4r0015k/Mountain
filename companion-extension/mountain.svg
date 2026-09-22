@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke="#f4f4f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Ridge line for mountain depth -->
+  <path d="M12 5 L12 17.5" opacity="0.45" />
+  <!-- Secondary Peak (Right) -->
+  <path d="M16.5 13.5 L21 8.5 L29 25 H22" />
+  <!-- Main Mountain with Keyhole Archway -->
+  <path d="M10.2 25 H3 L12 5 L22 25 H13.8 L13.2 21.2 A 1.8 1.8 0 1 0 10.8 21.2 L10.2 25 Z" />
+</svg>

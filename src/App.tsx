@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { VaultSnapshot } from './models/vault.js';
+import { VaultSnapshot, VaultItem, LoginFields } from './models/vault.js';
 import { listVaultSnapshots, deleteVaultSnapshot, loadVaultSnapshot, saveVaultSnapshot } from './storage/indexeddb.js';
-import { decryptVaultRecord } from './crypto/vault.js';
+import { decryptVaultRecord, encryptVaultRecord } from './crypto/vault.js';
 import { verifyVaultKey, createAuthCheckPayload } from './backup/index.js';
 import { VaultOnboarding } from './components/VaultOnboarding';
 import { VaultUnlock } from './components/VaultUnlock';
@@ -20,10 +20,105 @@ export const App: React.FC = () => {
   const [decryptedItems, setDecryptedItems] = useState<DecryptedRecord[]>([]);
   const [onboardingInitialMode, setOnboardingInitialMode] = useState<'choice' | 'restore'>('choice');
 
+  const handleCompanionSaveLogin = async (data: { username: string; password: string; url?: string; title?: string }) => {
+    if (!currentSnapshot || !activeKey) {
+      throw new Error('Vault is locked');
+    }
+
+    let domain = '';
+    if (data.url) {
+      try {
+        domain = new URL(data.url).hostname.replace(/^www\./, '');
+      } catch {
+        domain = data.url;
+      }
+    }
+    const title = data.title || domain || 'Saved Login';
+
+    const secretPayload: LoginFields = {
+      username: data.username,
+      password: data.password,
+      url: data.url,
+    };
+    const encryptedData = await encryptVaultRecord(secretPayload, activeKey);
+
+    let updatedItems = [...currentSnapshot.items];
+    const existingIndex = decryptedItems.findIndex((rec) => {
+      if (rec.item.type !== 'LOGIN') return false;
+      const recUser = (rec.secret?.username || '').trim().toLowerCase();
+      const inputUser = data.username.trim().toLowerCase();
+      if (!recUser || recUser !== inputUser) return false;
+
+      let recDomain = '';
+      if (rec.secret?.url) {
+        try {
+          recDomain = new URL(rec.secret.url).hostname.replace(/^www\./, '');
+        } catch {
+          recDomain = rec.secret.url;
+        }
+      }
+      return (
+        recDomain === domain ||
+        rec.item.title.toLowerCase().includes(domain.toLowerCase()) ||
+        domain.includes(rec.item.title.toLowerCase())
+      );
+    });
+
+    let savedId: string;
+    if (existingIndex >= 0) {
+      const existing = decryptedItems[existingIndex].item;
+      savedId = existing.id;
+      const updatedItem: VaultItem = {
+        ...existing,
+        updatedAt: Date.now(),
+        encryptedData,
+      };
+      const idxInSnapshot = updatedItems.findIndex((i) => i.id === existing.id);
+      if (idxInSnapshot >= 0) {
+        updatedItems[idxInSnapshot] = updatedItem;
+      } else {
+        updatedItems.push(updatedItem);
+      }
+    } else {
+      savedId = crypto.randomUUID();
+      const newItem: VaultItem = {
+        id: savedId,
+        type: 'LOGIN',
+        title,
+        favorite: false,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        encryptedData,
+      };
+      updatedItems.push(newItem);
+    }
+
+    let authCheck = currentSnapshot.authCheck;
+    if (!authCheck) {
+      try {
+        authCheck = await createAuthCheckPayload(activeKey, currentSnapshot.vaultId);
+      } catch {}
+    }
+
+    const updatedSnapshot: VaultSnapshot = {
+      ...currentSnapshot,
+      authCheck,
+      updatedAt: Date.now(),
+      items: updatedItems,
+    };
+
+    await saveVaultSnapshot(updatedSnapshot);
+    setCurrentSnapshot(updatedSnapshot);
+    await decryptAllItems(updatedSnapshot, activeKey);
+
+    return { success: true, id: savedId };
+  };
+
   // Activate companion extension bridge across all vault states
   const companion = useCompanionBridge({
     isUnlocked: vaultState === 'unlocked',
     items: decryptedItems,
+    onSaveLogin: handleCompanionSaveLogin,
   });
 
   // Check IndexedDB on mount

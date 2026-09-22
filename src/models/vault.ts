@@ -56,6 +56,11 @@ export interface VaultItem {
   encryptedData: EncryptedVaultPayload;
 }
 
+export interface DecryptedRecord {
+  item: VaultItem;
+  secret: any;
+}
+
 /**
  * The root container for a user's vault.
  * Serialized to JSON for local persistence (IndexedDB) and cloud sync (Google Drive appDataFolder).

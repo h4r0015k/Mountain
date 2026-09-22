@@ -43,10 +43,7 @@ import {
 import { CompanionPairingModal } from '../companion/CompanionPairingModal.js';
 import { CompanionBridgeHook } from '../companion/useCompanionBridge.js';
 
-export interface DecryptedRecord {
-  item: VaultItem;
-  secret: any;
-}
+export type { DecryptedRecord } from '../models/vault.js';
 
 interface Props {
   snapshot: VaultSnapshot;

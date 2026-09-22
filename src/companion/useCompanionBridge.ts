@@ -71,9 +71,17 @@ function generateRandomCode(): string {
   return num.toString();
 }
 
+export interface SaveLoginData {
+  username: string;
+  password: string;
+  url?: string;
+  title?: string;
+}
+
 export interface CompanionBridgeOptions {
   isUnlocked?: boolean;
   items: DecryptedRecord[];
+  onSaveLogin?: (data: SaveLoginData) => Promise<{ success: boolean; id: string }>;
 }
 
 export interface CompanionBridgeHook {
@@ -86,6 +94,10 @@ export interface CompanionBridgeHook {
 export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptions): CompanionBridgeHook {
   const isUnlocked = Array.isArray(arg) ? true : !!arg.isUnlocked;
   const items = Array.isArray(arg) ? arg : (arg.items || []);
+  const onSaveLogin = Array.isArray(arg) ? undefined : arg.onSaveLogin;
+
+  const onSaveLoginRef = useRef(onSaveLogin);
+  onSaveLoginRef.current = onSaveLogin;
 
   const [pairingCode, setPairingCode] = useState<string>(() => generateRandomCode());
   const [sessionToken, setSessionToken] = useState<string | null>(null);
@@ -137,12 +149,12 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
 
     broadcastStatus();
 
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       if (!event.data || event.data.source !== 'MOUNTAIN_EXTENSION_CONTENT_SCRIPT') {
         return;
       }
 
-      const { action, requestId, domain, options, code, token } = event.data;
+      const { action, requestId, domain, options, code, token, username, password, url, title } = event.data;
 
       switch (action) {
         case 'PING':
@@ -377,6 +389,155 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
             },
             targetOrigin
           );
+          break;
+        }
+
+        case 'CHECK_CREDENTIAL_STATUS': {
+          const targetDomain = normalizeDomain(domain || '');
+
+          if (!sessionTokenRef.current || token !== sessionTokenRef.current) {
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'CHECK_CREDENTIAL_RESPONSE',
+                requestId,
+                error: 'UNAUTHORIZED_NOT_PAIRED',
+                canSave: false,
+              },
+              targetOrigin
+            );
+            break;
+          }
+
+          if (!isUnlocked) {
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'CHECK_CREDENTIAL_RESPONSE',
+                requestId,
+                unlocked: false,
+                canSave: false,
+              },
+              targetOrigin
+            );
+            break;
+          }
+
+          const matched = items
+            .filter((rec) => rec.item.type === 'LOGIN' && (rec.secret?.password || rec.secret?.username))
+            .filter((rec) => matchesDomainOrTitle(rec.secret?.url || '', rec.item.title || '', targetDomain));
+
+          const userMatch = matched.find((rec) => {
+            const secUser = (rec.secret?.username || '').trim().toLowerCase();
+            const inputUser = (username || '').trim().toLowerCase();
+            return secUser && inputUser && secUser === inputUser;
+          });
+
+          if (userMatch) {
+            const isSamePassword = userMatch.secret?.password === password;
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'CHECK_CREDENTIAL_RESPONSE',
+                requestId,
+                exists: true,
+                isSamePassword,
+                isUpdate: !isSamePassword,
+                title: userMatch.item.title,
+                canSave: !isSamePassword,
+              },
+              targetOrigin
+            );
+          } else {
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'CHECK_CREDENTIAL_RESPONSE',
+                requestId,
+                exists: false,
+                isSamePassword: false,
+                isUpdate: false,
+                title: targetDomain || 'New Login',
+                canSave: true,
+              },
+              targetOrigin
+            );
+          }
+          break;
+        }
+
+        case 'SAVE_LOGIN': {
+          if (!sessionTokenRef.current || token !== sessionTokenRef.current) {
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'SAVE_LOGIN_RESPONSE',
+                requestId,
+                success: false,
+                error: 'UNAUTHORIZED_NOT_PAIRED',
+              },
+              targetOrigin
+            );
+            break;
+          }
+
+          if (!isUnlocked) {
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'SAVE_LOGIN_RESPONSE',
+                requestId,
+                success: false,
+                error: 'VAULT_LOCKED',
+              },
+              targetOrigin
+            );
+            break;
+          }
+
+          if (onSaveLoginRef.current) {
+            try {
+              const res = await onSaveLoginRef.current({
+                username: username || '',
+                password: password || '',
+                url: url || '',
+                title: title || domain || '',
+              });
+
+              window.postMessage(
+                {
+                  source: 'MOUNTAIN_SPA',
+                  type: 'SAVE_LOGIN_RESPONSE',
+                  requestId,
+                  success: true,
+                  id: res.id,
+                },
+                targetOrigin
+              );
+            } catch (err: any) {
+              window.postMessage(
+                {
+                  source: 'MOUNTAIN_SPA',
+                  type: 'SAVE_LOGIN_RESPONSE',
+                  requestId,
+                  success: false,
+                  error: err.message || 'Save failed',
+                },
+                targetOrigin
+              );
+            }
+          } else {
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'SAVE_LOGIN_RESPONSE',
+                requestId,
+                success: false,
+                error: 'SAVE_HANDLER_NOT_CONFIGURED',
+              },
+              targetOrigin
+            );
+          }
           break;
         }
 

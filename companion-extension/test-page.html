@@ -117,9 +117,9 @@
   <div class="container">
     <span class="badge">Companion Test Page</span>
     <h1>Sign in to Your Account</h1>
-    <p class="subtitle">Notice the floating Mountain icon on the right side of the password field, or press <kbd>Cmd+Shift+L</kbd> to autofill.</p>
+    <p class="subtitle">Press <kbd>Cmd+Shift+L</kbd> to autofill, or submit new credentials below to test the automatic <strong>Save to Mountain</strong> prompt!</p>
 
-    <form onsubmit="event.preventDefault(); alert('Form submitted with: ' + document.getElementById('username').value);">
+    <form onsubmit="event.preventDefault(); document.getElementById('status-box').style.display='block'; document.getElementById('status-box').textContent='Form submitted for: ' + (document.getElementById('username').value || 'anonymous');">
       <div class="form-group">
         <label for="username">Username or Email</label>
         <input type="text" id="username" name="username" placeholder="user@example.com" autocomplete="username">
@@ -131,13 +131,16 @@
       </div>
 
       <button type="submit" class="submit-btn">Sign In</button>
+      <div id="status-box" style="display:none;margin-top:10px;padding:8px 12px;background:#27272a;border-radius:8px;font-size:12px;color:#34d399;font-family:monospace;"></div>
     </form>
 
     <div class="instructions">
       <strong>How to test:</strong><br>
       1. Ensure Mountain is running at <code>http://localhost:5173</code> and unlocked.<br>
-      2. Click the 🏔️ icon inside the password field to see matching credentials or click <strong>Generate Secure Password</strong>.<br>
-      3. Press <kbd>Cmd+Shift+L</kbd> (or <kbd>Ctrl+Shift+L</kbd>) to trigger instant 1-click autofill!
+      2. Type a new username and password above and click <strong>Sign In</strong>.<br>
+      3. Watch the Mountain <strong>Save to Mountain?</strong> prompt appear in the top-right corner!<br>
+      4. Click <strong>Save to Mountain</strong> — it will be encrypted and saved to your local vault immediately.<br>
+      5. Next time, press <kbd>Cmd+Shift+L</kbd> to autofill it instantly!
     </div>
   </div>
 </body>

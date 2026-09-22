@@ -38,7 +38,10 @@ import {
   AlertTriangle,
   Layers,
   Code2,
+  Puzzle,
 } from 'lucide-react';
+import { CompanionPairingModal } from '../companion/CompanionPairingModal.js';
+import { CompanionBridgeHook } from '../companion/useCompanionBridge.js';
 
 export interface DecryptedRecord {
   item: VaultItem;
@@ -51,6 +54,7 @@ interface Props {
   items: DecryptedRecord[];
   onLock: () => void;
   onRefreshItems: () => Promise<void>;
+  companion?: CompanionBridgeHook;
 }
 
 /**
@@ -472,6 +476,7 @@ export const VaultDashboard: React.FC<Props> = ({
   items,
   onLock,
   onRefreshItems,
+  companion,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'ALL' | VaultItemType>('ALL');
@@ -480,6 +485,7 @@ export const VaultDashboard: React.FC<Props> = ({
   const [showGenerator, setShowGenerator] = useState(false);
   const [generatorTarget, setGeneratorTarget] = useState<'password' | 'apiKey'>('password');
   const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showCompanionModal, setShowCompanionModal] = useState(false);
   const [revealedFields, setRevealedFields] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -913,6 +919,25 @@ export const VaultDashboard: React.FC<Props> = ({
           </div>
 
           <div className="flex items-center space-x-2">
+            {companion && (
+              <button
+                onClick={() => setShowCompanionModal(true)}
+                className={`flex items-center space-x-1.5 py-1.5 px-3 rounded-lg text-xs transition focus-ring ${
+                  companion.isPaired
+                    ? 'bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/40 font-semibold border border-emerald-600/40 shadow-sm'
+                    : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-medium border border-zinc-800'
+                }`}
+                title={companion.isPaired ? 'Companion Extension: Paired & Active' : 'Pair Companion Extension'}
+              >
+                <Puzzle className={`w-3.5 h-3.5 ${companion.isPaired ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <span className="hidden sm:inline">Companion</span>
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    companion.isPaired ? 'bg-emerald-400' : 'bg-zinc-600'
+                  }`}
+                />
+              </button>
+            )}
             <button
               onClick={() => setShowBackupModal(true)}
               className={`flex items-center space-x-1.5 py-1.5 px-3 rounded-lg text-xs transition focus-ring ${
@@ -2214,6 +2239,18 @@ export const VaultDashboard: React.FC<Props> = ({
         snapshot={snapshot}
         onBackupSuccess={handleBackupSuccess}
       />
+
+      {/* Companion Extension Pairing Modal */}
+      {companion && (
+        <CompanionPairingModal
+          isOpen={showCompanionModal}
+          onClose={() => setShowCompanionModal(false)}
+          pairingCode={companion.pairingCode}
+          isPaired={companion.isPaired}
+          onRegenerateCode={companion.regeneratePairingCode}
+          onUnpair={companion.unpair}
+        />
+      )}
 
       {/* Mobile Bottom Bar */}
       <div className="sm:hidden fixed bottom-4 inset-x-4 z-20">

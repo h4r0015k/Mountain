@@ -7,6 +7,7 @@ import { VaultOnboarding } from './components/VaultOnboarding';
 import { VaultUnlock } from './components/VaultUnlock';
 import { VaultDashboard, DecryptedRecord } from './components/VaultDashboard';
 import { ShowcaseDashboard, MountainIcon } from './components/ShowcaseDashboard';
+import { useCompanionBridge } from './companion/useCompanionBridge.js';
 
 type VaultState = 'loading' | 'needs_setup' | 'locked' | 'unlocked';
 type ViewMode = 'showcase' | 'vault';
@@ -18,6 +19,12 @@ export const App: React.FC = () => {
   const [activeKey, setActiveKey] = useState<CryptoKey | null>(null);
   const [decryptedItems, setDecryptedItems] = useState<DecryptedRecord[]>([]);
   const [onboardingInitialMode, setOnboardingInitialMode] = useState<'choice' | 'restore'>('choice');
+
+  // Activate companion extension bridge across all vault states
+  const companion = useCompanionBridge({
+    isUnlocked: vaultState === 'unlocked',
+    items: decryptedItems,
+  });
 
   // Check IndexedDB on mount
   useEffect(() => {
@@ -170,6 +177,7 @@ export const App: React.FC = () => {
             items={decryptedItems}
             onLock={handleLock}
             onRefreshItems={handleRefreshItems}
+            companion={companion}
           />
         </div>
       )}

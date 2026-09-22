@@ -10,8 +10,6 @@
   if (window.__MOUNTAIN_BRIDGE_INITIALIZED__) return;
   window.__MOUNTAIN_BRIDGE_INITIALIZED__ = true;
 
-  console.log('[Mountain Bridge] Content script initialized on:', window.location.href);
-
   // Pending callbacks waiting for SPA response
   const pendingRequests = new Map();
 
@@ -23,7 +21,6 @@
     }
 
     const data = event.data;
-    console.log('[Mountain Bridge] Received from SPA:', data.type || data.action, data);
 
     // If it's a broadcast status update or a PONG response
     if (data.type === 'VAULT_STATUS_BROADCAST' || data.type === 'PONG') {
@@ -62,8 +59,6 @@
       return false;
     }
 
-    console.log('[Mountain Bridge] Background requested:', request.action);
-
     const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     // Store callback to resolve sendResponse when SPA responds via window.postMessage
@@ -86,13 +81,9 @@
 
     window.postMessage(
       {
+        ...request,
         source: 'MOUNTAIN_EXTENSION_CONTENT_SCRIPT',
-        action: request.action,
         requestId,
-        domain: request.domain,
-        options: request.options,
-        code: request.code,
-        token: request.token,
       },
       targetOrigin
     );
@@ -101,11 +92,14 @@
   });
 
   // If this tab looks like a Mountain host, immediately probe if SPA is already mounted
+  const pathname = window.location.pathname.toLowerCase();
   const isLikelyMountain =
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1' ||
-    document.title.toLowerCase().startsWith('mountain —') ||
-    document.title.toLowerCase() === 'mountain';
+    !pathname.includes('test-page') &&
+    !pathname.includes('/companion-extension/') &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      document.title.toLowerCase().startsWith('mountain —') ||
+      document.title.toLowerCase() === 'mountain');
 
   if (isLikelyMountain) {
     // Send probe after slight delay to ensure React listeners are bound

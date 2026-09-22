@@ -455,10 +455,10 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                 <span>Browser Extension (Unpacked)</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                Autofill logins without copying and pasting
+                Autofill and auto-save logins across the web
               </h2>
               <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-xl">
-                Fill your usernames and passwords on any website with a single click. It talks directly to your unlocked Mountain tab and never saves passwords inside the extension itself.
+                Fill existing credentials with 1-click or hotkeys, create random passwords, and auto-save new logins on submission. It talks directly to your unlocked Mountain tab and never stores passwords in the extension.
               </p>
             </div>
 
@@ -473,6 +473,20 @@ export const ShowcaseDashboard: React.FC<Props> = ({
           {/* Features & Visual Preview */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center mb-8">
             <div className="lg:col-span-7 space-y-3">
+              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Auto-save logins on form submission</h3>
+                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                      Signing in or registering somewhere new? Mountain automatically detects submitted credentials and presents a 1-click prompt to encrypt and persist them directly into your vault.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
@@ -507,9 +521,9 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                     <Zap className="w-4 h-4 text-zinc-200" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white">Works with modern sign-in pages</h3>
+                    <h3 className="text-sm font-semibold text-white">Works with modern reactive pages</h3>
                     <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                      Websites like Instagram, Google, and GitHub use reactive forms that often ignore basic autofill tools. Mountain triggers the right form events so submit buttons turn on automatically.
+                      Websites like Instagram, Google, and GitHub use reactive forms that often ignore basic autofill. Mountain triggers native DOM input events and buffers submissions before pages redirect.
                     </p>
                   </div>
                 </div>
@@ -518,43 +532,55 @@ export const ShowcaseDashboard: React.FC<Props> = ({
 
             {/* Visual Preview */}
             <div className="lg:col-span-5">
-              <div className="p-4 rounded-xl bg-zinc-900/70 border border-zinc-800 shadow-xl">
+              <div className="p-4 rounded-xl bg-zinc-900/70 border border-zinc-800 shadow-xl space-y-3">
+                {/* Floating Save Prompt Mock */}
+                <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-700/80 shadow-2xl">
+                  <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80 mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-4 h-4 rounded bg-zinc-900 border border-zinc-700 flex items-center justify-center">
+                        <MountainIcon className="w-2.5 h-2.5 text-emerald-400" />
+                      </div>
+                      <span className="text-[11px] font-semibold text-white">Mountain</span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">New</span>
+                    </div>
+                    <span className="text-zinc-500 text-xs">✕</span>
+                  </div>
+                  <div className="text-[11px] text-zinc-300 mb-2.5">
+                    Save password for <strong className="text-white">instagram.com</strong> to Mountain?
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1 py-1.5 px-2.5 rounded-lg bg-zinc-100 text-zinc-950 font-semibold text-[11px] text-center shadow-sm">
+                      Save to Mountain
+                    </div>
+                    <div className="py-1.5 px-3 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 text-[11px] text-center">
+                      Never
+                    </div>
+                  </div>
+                </div>
+
                 {/* Browser Tab Mock */}
-                <div className="flex items-center gap-2 pb-2.5 mb-2.5 border-b border-zinc-800 text-[11px] font-mono text-zinc-400">
-                  <div className="flex gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                <div className="pt-2 border-t border-zinc-800/60">
+                  <div className="flex items-center gap-2 pb-2.5 mb-2.5 border-b border-zinc-800 text-[11px] font-mono text-zinc-400">
+                    <div className="flex gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                    </div>
+                    <div className="flex-1 text-center bg-zinc-950 py-0.5 px-3 rounded text-[10px] text-zinc-500 truncate border border-zinc-800/60">
+                      instagram.com/accounts/login
+                    </div>
                   </div>
-                  <div className="flex-1 text-center bg-zinc-950 py-0.5 px-3 rounded text-[10px] text-zinc-500 truncate border border-zinc-800/60">
-                    instagram.com/accounts/login
-                  </div>
-                </div>
 
-                {/* Form Simulation */}
-                <div className="space-y-2 my-2">
-                  <div className="p-2 rounded bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 font-mono flex items-center justify-between">
-                    <span>nikhil@example.com</span>
-                    <span className="text-[10px] text-zinc-500">username</span>
-                  </div>
-                  <div className="p-2 rounded bg-zinc-950 border border-emerald-500/40 text-xs text-emerald-400 font-mono flex items-center justify-between">
-                    <span>••••••••••••••••</span>
-                    <span className="text-[10px] text-emerald-400 font-mono">autofilled</span>
-                  </div>
-                </div>
-
-                {/* Mock Context Menu */}
-                <div className="mt-3 p-1.5 rounded-lg bg-zinc-950 border border-zinc-700/80 shadow-lg space-y-1 text-xs">
-                  <div className="px-2 py-1 text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1.5 border-b border-zinc-800">
-                    <MountainIcon className="w-3 h-3 text-zinc-400" />
-                    <span>Mountain</span>
-                  </div>
-                  <div className="px-2 py-1 rounded bg-zinc-900 text-white font-medium flex items-center justify-between text-[11px]">
-                    <span>Fill Username & Password</span>
-                    <kbd className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">Cmd+Shift+L</kbd>
-                  </div>
-                  <div className="px-2 py-1 rounded text-zinc-400 flex items-center gap-1.5 text-[11px]">
-                    <span>Generate Strong Password</span>
+                  {/* Form Simulation */}
+                  <div className="space-y-2 my-2">
+                    <div className="p-2 rounded bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 font-mono flex items-center justify-between">
+                      <span>nikhil@example.com</span>
+                      <span className="text-[10px] text-zinc-500">username</span>
+                    </div>
+                    <div className="p-2 rounded bg-zinc-950 border border-emerald-500/40 text-xs text-emerald-400 font-mono flex items-center justify-between">
+                      <span>••••••••••••••••</span>
+                      <span className="text-[10px] text-emerald-400 font-mono">autofilled</span>
+                    </div>
                   </div>
                 </div>
               </div>

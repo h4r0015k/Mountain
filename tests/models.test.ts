@@ -148,4 +148,38 @@ describe("Mountain Domain Models & Vault Lifecycle", () => {
     const decNote = await decryptVaultRecord<typeof noteSecret>(itemNote.encryptedData, masterKey);
     expect(decNote.content).toContain("## Secret Recovery Notes");
   });
+
+  it("evaluates password entropy and strength accurately", async () => {
+    const { evaluatePasswordStrength } = await import("../src/crypto/strength.js");
+    expect(evaluatePasswordStrength("").score).toBe(0);
+    expect(evaluatePasswordStrength("123456").score).toBeLessThanOrEqual(1);
+    expect(evaluatePasswordStrength("short").score).toBeLessThanOrEqual(1);
+    expect(evaluatePasswordStrength("PassWord123").score).toBe(1); // Caught by dictionary prefix penalty
+    expect(evaluatePasswordStrength("K9#mQ2$vL5!xR8").score).toBe(3);
+    expect(evaluatePasswordStrength("P@ssw0rd2026!Protected").score).toBe(4);
+  });
+
+  it("creates and decrypts quickUnlock envelope using local PIN without breaking mnemonic root key", async () => {
+    const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+    const pin = "7890";
+    const pinSalt = generateSalt(16);
+    const pinKeyBundle = await deriveVaultKey(pin, pinSalt, 10_000);
+
+    // Seal mnemonic into quickUnlock envelope
+    const encryptedMnemonic = await encryptVaultRecord({ mnemonic }, pinKeyBundle.key);
+
+    // Decrypt with correct PIN
+    const envelope = await decryptVaultRecord<{ mnemonic: string }>(encryptedMnemonic, pinKeyBundle.key);
+    expect(envelope.mnemonic).toBe(mnemonic);
+
+    // Verify root vault key derived from decrypted mnemonic matches original
+    const salt = generateSalt(16);
+    const keyOriginal = await deriveVaultKey(mnemonic, salt, 10_000);
+    const keyFromEnvelope = await deriveVaultKey(envelope.mnemonic, salt, 10_000);
+
+    const testPayload = { secret: "mountain_token" };
+    const encryptedWithOriginal = await encryptVaultRecord(testPayload, keyOriginal.key);
+    const decryptedWithEnvelopeKey = await decryptVaultRecord<typeof testPayload>(encryptedWithOriginal, keyFromEnvelope.key);
+    expect(decryptedWithEnvelopeKey.secret).toBe("mountain_token");
+  });
 });

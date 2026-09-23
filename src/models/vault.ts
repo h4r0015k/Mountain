@@ -61,6 +61,12 @@ export interface DecryptedRecord {
   secret: any;
 }
 
+export interface QuickUnlockConfig {
+  salt: string; // Base64 16-byte salt for PIN key derivation
+  kdfIterations: number;
+  encryptedMnemonic: EncryptedVaultPayload; // 12-word seed encrypted with PIN key
+}
+
 /**
  * The root container for a user's vault.
  * Serialized to JSON for local persistence (IndexedDB) and cloud sync (Google Drive appDataFolder).
@@ -71,7 +77,8 @@ export interface VaultSnapshot {
   vaultId: string;
   salt: string; // Base64 16-byte KDF salt
   kdfIterations: number; // 600,000 rounds
-  authCheck?: EncryptedVaultPayload; // Optional canary payload to rapidly verify decryption key
+  authCheck?: EncryptedVaultPayload; // Canary payload to rapidly verify decryption key
+  quickUnlock?: QuickUnlockConfig; // Optional local quick-unlock key envelope
   items: VaultItem[];
   createdAt: number;
   updatedAt: number;

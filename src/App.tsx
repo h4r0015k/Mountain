@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { VaultSnapshot, VaultItem, LoginFields } from './models/vault.js';
 import { listVaultSnapshots, deleteVaultSnapshot, loadVaultSnapshot, saveVaultSnapshot } from './storage/indexeddb.js';
 import { decryptVaultRecord, encryptVaultRecord } from './crypto/vault.js';
@@ -201,11 +201,11 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleLock = () => {
+  const handleLock = useCallback(() => {
     setActiveKey(null);
     setDecryptedItems([]);
     setVaultState('locked');
-  };
+  }, []);
 
   const handleResetVault = async () => {
     if (currentSnapshot) {
@@ -256,6 +256,7 @@ export const App: React.FC = () => {
             snapshot={currentSnapshot}
             onUnlocked={handleUnlocked}
             onResetVault={handleResetVault}
+            onReturnToOverview={() => setViewMode('showcase')}
             onRestoreBackup={() => {
               setOnboardingInitialMode('restore');
               setVaultState('needs_setup');
@@ -273,6 +274,7 @@ export const App: React.FC = () => {
             onLock={handleLock}
             onRefreshItems={handleRefreshItems}
             companion={companion}
+            onReturnToOverview={() => setViewMode('showcase')}
           />
         </div>
       )}

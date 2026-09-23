@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
 import { deriveVaultKey } from '../crypto/kdf.js';
 import { base64ToBytes } from '../crypto/base64.js';
+import { decryptVaultRecord } from '../crypto/vault.js';
 import { VaultSnapshot } from '../models/vault.js';
 import { verifyVaultKey } from '../backup/index.js';
-import { Lock, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
+import { Lock, AlertTriangle, ArrowRight, Loader2, Home } from 'lucide-react';
 
 interface Props {
   snapshot: VaultSnapshot;
   onUnlocked: (key: CryptoKey, masterSecret: string) => void;
   onResetVault: () => void;
   onRestoreBackup?: () => void;
+  onReturnToOverview?: () => void;
 }
 
-export const VaultUnlock: React.FC<Props> = ({ snapshot, onUnlocked, onResetVault, onRestoreBackup }) => {
+export const VaultUnlock: React.FC<Props> = ({
+  snapshot,
+  onUnlocked,
+  onResetVault,
+  onRestoreBackup,
+  onReturnToOverview,
+}) => {
   const [passphrase, setPassphrase] = useState('');
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,8 +28,9 @@ export const VaultUnlock: React.FC<Props> = ({ snapshot, onUnlocked, onResetVaul
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!passphrase.trim()) {
-      setError('Please enter your master password or recovery phrase.');
+    const cleanSecret = passphrase.trim();
+    if (!cleanSecret) {
+      setError('Please enter your recovery phrase or quick-unlock PIN.');
       return;
     }
 
@@ -30,19 +39,54 @@ export const VaultUnlock: React.FC<Props> = ({ snapshot, onUnlocked, onResetVaul
       setError(null);
 
       const saltBytes = base64ToBytes(snapshot.salt);
-      const keyBundle = await deriveVaultKey(
-        passphrase.trim(),
-        saltBytes,
-        snapshot.kdfIterations || 600000
-      );
 
-      const isValid = await verifyVaultKey(keyBundle.key, snapshot);
-      if (!isValid) {
-        setError('Incorrect master password or recovery phrase.');
-        return;
+      // Strategy 1: Attempt direct derivation (e.g. 12 words or master passphrase)
+      try {
+        const keyBundle = await deriveVaultKey(
+          cleanSecret,
+          saltBytes,
+          snapshot.kdfIterations || 600000
+        );
+
+        const isValid = await verifyVaultKey(keyBundle.key, snapshot);
+        if (isValid) {
+          onUnlocked(keyBundle.key, cleanSecret);
+          return;
+        }
+      } catch {}
+
+      // Strategy 2: If quickUnlock envelope exists, attempt PIN unlock
+      if (snapshot.quickUnlock) {
+        try {
+          const pinSaltBytes = base64ToBytes(snapshot.quickUnlock.salt);
+          const pinKeyBundle = await deriveVaultKey(
+            cleanSecret,
+            pinSaltBytes,
+            snapshot.quickUnlock.kdfIterations
+          );
+
+          const envelope = await decryptVaultRecord<{ mnemonic: string }>(
+            snapshot.quickUnlock.encryptedMnemonic,
+            pinKeyBundle.key
+          );
+
+          if (envelope && envelope.mnemonic) {
+            const masterKeyBundle = await deriveVaultKey(
+              envelope.mnemonic,
+              saltBytes,
+              snapshot.kdfIterations || 600000
+            );
+
+            const isValid = await verifyVaultKey(masterKeyBundle.key, snapshot);
+            if (isValid) {
+              onUnlocked(masterKeyBundle.key, envelope.mnemonic);
+              return;
+            }
+          }
+        } catch {}
       }
 
-      onUnlocked(keyBundle.key, passphrase.trim());
+      setError('Incorrect recovery phrase or quick-unlock PIN.');
     } catch (err: any) {
       setError(`Unlock failed: ${err.message}`);
     } finally {
@@ -50,9 +94,22 @@ export const VaultUnlock: React.FC<Props> = ({ snapshot, onUnlocked, onResetVaul
     }
   };
 
+  const hasQuickUnlock = !!snapshot.quickUnlock;
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-950 text-zinc-100">
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl p-6 sm:p-7 space-y-5 animate-fade-in">
+        {onReturnToOverview && (
+          <button
+            type="button"
+            onClick={onReturnToOverview}
+            className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition mb-2"
+          >
+            <Home className="w-3.5 h-3.5" />
+            <span>Back to Overview</span>
+          </button>
+        )}
+
         <div className="text-center space-y-2">
           <div className="w-10 h-10 mx-auto rounded-xl bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-zinc-200">
             <Lock className="w-4 h-4" />
@@ -76,9 +133,9 @@ export const VaultUnlock: React.FC<Props> = ({ snapshot, onUnlocked, onResetVaul
               type="password"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
-              placeholder="Master password or 12 words"
+              placeholder={hasQuickUnlock ? "Quick-unlock PIN or 12 words" : "12-word recovery phrase"}
               autoFocus
-              className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 focus-ring"
+              className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 focus-ring outline-none"
             />
           </div>
 
@@ -144,3 +201,5 @@ export const VaultUnlock: React.FC<Props> = ({ snapshot, onUnlocked, onResetVaul
     </div>
   );
 };
+
+export default VaultUnlock;

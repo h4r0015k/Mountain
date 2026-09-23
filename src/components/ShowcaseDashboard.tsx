@@ -14,7 +14,6 @@ import {
   KeyRound,
   FileCheck2,
   HelpCircle,
-  Database,
   Smartphone,
   RefreshCw,
   FolderLock,
@@ -140,11 +139,6 @@ export const ShowcaseDashboard: React.FC<Props> = ({
   // Rotating Hero One-Liners
   const [phraseIndex, setPhraseIndex] = useState(0);
 
-  // Diagnostics & In-Browser Self-Test State
-  const [webCryptoAvailable, setWebCryptoAvailable] = useState<boolean | null>(null);
-  const [indexedDbAvailable, setIndexedDbAvailable] = useState<boolean | null>(null);
-  const [testResult, setTestResult] = useState<string | null>(null);
-  const [testing, setTesting] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -154,48 +148,6 @@ export const ShowcaseDashboard: React.FC<Props> = ({
 
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    setWebCryptoAvailable(typeof window !== 'undefined' && !!window.crypto?.subtle);
-    setIndexedDbAvailable(typeof window !== 'undefined' && 'indexedDB' in window);
-  }, []);
-
-  // Run a live in-browser WebCrypto AES-256-GCM self-test for technical users
-  const runSelfTest = async () => {
-    setTesting(true);
-    try {
-      const start = performance.now();
-      const key = await window.crypto.subtle.generateKey(
-        { name: 'AES-GCM', length: 256 },
-        true,
-        ['encrypt', 'decrypt']
-      );
-      const iv = window.crypto.getRandomValues(new Uint8Array(12));
-      const payload = new TextEncoder().encode('mountain_integrity_check');
-      const ciphertext = await window.crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv },
-        key,
-        payload
-      );
-      const decrypted = await window.crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv },
-        key,
-        ciphertext
-      );
-      const decoded = new TextDecoder().decode(decrypted);
-      const elapsed = (performance.now() - start).toFixed(2);
-
-      if (decoded === 'mountain_integrity_check') {
-        setTestResult(`Test Passed in ${elapsed}ms: AES-256-GCM AEAD encryption verified on your device hardware.`);
-      } else {
-        setTestResult('Integrity verification failed');
-      }
-    } catch (err: any) {
-      setTestResult(`Self-test error: ${err.message}`);
-    } finally {
-      setTesting(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 font-sans selection:bg-zinc-800 selection:text-white flex flex-col">
@@ -361,7 +313,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
           {/* Status Badge */}
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400 mb-6 animate-fade-in">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span>LOCAL-FIRST // 100% PRIVATE // OPEN SOURCE</span>
+            <span>ZERO-KNOWLEDGE • LOCAL-FIRST • OPEN SOURCE</span>
           </div>
 
           {/* Main Headline */}
@@ -376,7 +328,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
           </h1>
 
           <p className="text-sm sm:text-base text-zinc-400 max-w-2xl leading-relaxed mb-8 animate-fade-in-delayed-2">
-            An open-source, local-first password manager. Encrypted client-side, backed up to your personal Google Drive, and completely free of company-hosted databases.
+            An open-source, local-first password manager. Encrypted client-side, optionally backed up to your personal Google Drive, and completely free of company-hosted databases.
           </p>
 
           {/* Action Button Group */}
@@ -597,26 +549,25 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             </div>
 
             <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
-              <button
-                disabled
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-zinc-800/80 text-zinc-500 border border-zinc-700/40 text-xs font-medium cursor-not-allowed opacity-60 select-none"
-                title="Download archive will be available in a future release"
+              <a
+                href="https://github.com/h4r0015k/Mountain/archive/refs/heads/main.zip"
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-medium transition-colors"
+                title="Download repository zip archive"
               >
-                <Download className="w-3.5 h-3.5 text-zinc-500" />
+                <Download className="w-3.5 h-3.5 text-zinc-300" />
                 <span>Download .zip</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-900 text-zinc-500 border border-zinc-700/60">
-                  Disabled
-                </span>
-              </button>
+              </a>
 
               <a
                 href="https://github.com/h4r0015k/Mountain/tree/main/companion-extension"
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-medium transition-colors"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs transition-colors"
               >
-                <span>View on GitHub</span>
-                <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Extension Source</span>
+                <ExternalLink className="w-3.5 h-3.5 text-zinc-900" />
               </a>
             </div>
           </div>
@@ -655,7 +606,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               </div>
               <h3 className="text-sm font-semibold text-white mb-1.5">A 12-Word Paper Key</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Instead of making up a password that can be forgotten or guessed, Mountain creates a 12-word master recovery phrase. Write it down on a piece of paper. It serves as your permanent, unhackable master key.
+                Instead of relying on a password that can be forgotten or guessed, Mountain generates a 12-word master recovery phrase (BIP-39). Written down offline, it serves as your permanent, self-custodied master key.
               </p>
             </div>
 
@@ -665,7 +616,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               </div>
               <h3 className="text-sm font-semibold text-white mb-1.5">Fast Daily Unlock</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                You don't need to type your 12 words every time you open the app. You can set a fast daily PIN or passcode to quickly open your vault on your phone or laptop.
+                You don't need to type 12 words on every unlock. An optional daily PIN unlocks a local cryptographic envelope on your trusted device, while your recovery phrase remains the permanent master key.
               </p>
             </div>
 
@@ -673,9 +624,9 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                 <FolderLock className="w-4 h-4 text-zinc-200" />
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">Backups on Your Own Google Drive</h3>
+              <h3 className="text-sm font-semibold text-white mb-1.5">Optional Google Drive or Local File Backups</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Want to sync passwords across your phone and laptop? Mountain connects directly to your own Google Drive. Your vault is fully locked with military-grade encryption before it ever leaves your browser.
+                Export encrypted .json backup files directly to your machine, or optionally connect your personal Google Drive for multi-device sync. Vault snapshots are sealed with authenticated AES-256-GCM before ever leaving your browser sandbox.
               </p>
             </div>
           </div>
@@ -738,10 +689,10 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                 </span>
               </div>
               <h3 className="text-sm font-semibold text-white mb-1.5">
-                How does quick PIN unlock defend against brute-force attacks?
+                How does key derivation defend against brute-force attacks?
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Your daily PIN or passphrase is run through <strong>PBKDF2-HMAC-SHA256</strong> with <strong>600,000 iterations</strong> and a unique 16-byte random cryptographic salt. This conforms to OWASP 2024 password storage guidelines and introduces sufficient computational delay to render GPU, FPGA, and ASIC-accelerated rainbow table searches impractical.
+                Your 12-word mnemonic master root key is derived using <strong>PBKDF2-HMAC-SHA256</strong> with <strong>600,000 iterations</strong> and a unique 16-byte cryptographic salt (exceeding OWASP password storage recommendations). Optional quick-unlock PINs use an isolated 100,000-iteration local envelope to decrypt the root mnemonic exclusively on your authorized device.
               </p>
             </div>
 
@@ -792,54 +743,6 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                 Mountain communicates directly with Google's OAuth 2.0 PKCE endpoints without an intermediary backend. Encrypted snapshot files are written to the hidden Google Drive <code className="text-zinc-300 font-mono">appDataFolder</code>—a special directory accessible only by Mountain. Because data is encrypted before transmission, Google and network observers see only opaque ciphertext.
               </p>
             </div>
-          </div>
-
-          {/* In-Browser Hardware Crypto Verification Test */}
-          <div className="p-5 rounded-xl border border-zinc-800 bg-zinc-900/30">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
-              <div>
-                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-zinc-300">
-                  <Database className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>Hardware & Browser Sandbox Verification</span>
-                </div>
-                <p className="text-xs text-zinc-500 mt-1">
-                  Run a live encryption/decryption round-trip directly in your browser's WebCrypto subsystem.
-                </p>
-              </div>
-
-              <button
-                onClick={runSelfTest}
-                disabled={testing}
-                className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-medium text-xs transition-colors shrink-0"
-              >
-                <Zap className={`w-3.5 h-3.5 text-amber-400 ${testing ? 'animate-bounce' : ''}`} />
-                <span>{testing ? 'Testing...' : 'Test Browser Crypto Speed'}</span>
-              </button>
-            </div>
-
-            {/* Diagnostic Badges */}
-            <div className="flex flex-wrap items-center gap-4 text-xs font-mono pt-3 border-t border-zinc-800/80">
-              <div className="flex items-center gap-1.5 text-zinc-300">
-                <span className={`w-2 h-2 rounded-full ${webCryptoAvailable ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                <span>WebCrypto API: {webCryptoAvailable ? 'ACTIVE' : 'UNAVAILABLE'}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-zinc-300">
-                <span className={`w-2 h-2 rounded-full ${indexedDbAvailable ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                <span>IndexedDB: {indexedDbAvailable ? 'READY' : 'UNAVAILABLE'}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-zinc-300">
-                <span className={`w-2 h-2 rounded-full ${hasExistingVault ? 'bg-indigo-400' : 'bg-zinc-600'}`} />
-                <span>Local Snapshot: {hasExistingVault ? `DETECTED (${vaultItemCount} records)` : 'READY TO INIT'}</span>
-              </div>
-            </div>
-
-            {/* Live Test Readout */}
-            {testResult && (
-              <div className="mt-3.5 p-2.5 rounded-lg bg-black/60 border border-zinc-800 font-mono text-xs text-emerald-400 flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                <span>{testResult}</span>
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -912,8 +815,8 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="pt-6 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-zinc-600 font-mono text-[11px]">
-            <div>Created by Nikhil Sahani • GitHub Pages Ready</div>
+          <div className="pt-6 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-zinc-500 font-mono text-[11px]">
+            <div>Mountain v1.0.0 • Free & Open Source under ISC License</div>
             <div>PBKDF2-HMAC-SHA256 • AES-256-GCM • BIP-39</div>
           </div>
         </div>

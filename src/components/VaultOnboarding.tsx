@@ -13,6 +13,8 @@ import {
   DecryptionValidationError,
   createAuthCheckPayload,
 } from '../backup/index.js';
+import { encryptVaultRecord } from '../crypto/vault.js';
+import { evaluatePasswordStrength } from '../crypto/strength.js';
 import {
   Copy,
   Check,
@@ -30,8 +32,8 @@ import {
   FileJson,
   Loader2,
   ExternalLink,
-  HelpCircle,
 } from 'lucide-react';
+import { GoogleOAuthHelpGuide } from './vault/GoogleOAuthHelpGuide.js';
 
 interface Props {
   onVaultReady: (key: CryptoKey, snapshot: VaultSnapshot, masterSecret: string) => void;
@@ -77,8 +79,6 @@ export const VaultOnboarding: React.FC<Props> = ({
       return '';
     }
   });
-  const [showTokenHelp, setShowTokenHelp] = useState(false);
-  const [copiedScope, setCopiedScope] = useState(false);
   const [gdriveBackups, setGdriveBackups] = useState<GoogleDriveFileMetadata[]>([]);
   const [selectedGdriveFile, setSelectedGdriveFile] = useState<GoogleDriveFileMetadata | null>(null);
   const [isLoadingGdrive, setIsLoadingGdrive] = useState(false);
@@ -87,14 +87,6 @@ export const VaultOnboarding: React.FC<Props> = ({
     setGdriveToken(val);
     try {
       sessionStorage.setItem('mountain_gdrive_token', val);
-    } catch {}
-  };
-
-  const handleCopyScope = async () => {
-    try {
-      await navigator.clipboard.writeText('https://www.googleapis.com/auth/drive.file');
-      setCopiedScope(true);
-      setTimeout(() => setCopiedScope(false), 2000);
     } catch {}
   };
 
@@ -147,13 +139,27 @@ export const VaultOnboarding: React.FC<Props> = ({
       setIsInitializing(true);
       setError(null);
 
-      const secretToDeriveFrom = pinPassword.trim() || mnemonic;
+      // Cryptographic guarantee: Root master key is ALWAYS derived from the 12-word mnemonic
       const salt = generateSalt(16);
-      const keyBundle = await deriveVaultKey(secretToDeriveFrom, salt, 600000);
+      const keyBundle = await deriveVaultKey(mnemonic, salt, 600000);
       const saltBase64 = bytesToBase64(salt);
 
       const vaultId = crypto.randomUUID();
       const authCheck = await createAuthCheckPayload(keyBundle.key, vaultId);
+
+      // If optional quick-unlock PIN is provided, seal a local mnemonic envelope
+      let quickUnlock = undefined;
+      if (pinPassword.trim()) {
+        const pinSalt = generateSalt(16);
+        const pinKeyBundle = await deriveVaultKey(pinPassword.trim(), pinSalt, 100_000);
+        const encryptedMnemonic = await encryptVaultRecord({ mnemonic }, pinKeyBundle.key);
+        quickUnlock = {
+          salt: bytesToBase64(pinSalt),
+          kdfIterations: 100_000,
+          encryptedMnemonic,
+        };
+      }
+
       const newSnapshot: VaultSnapshot = {
         format: 'mountain-vault',
         version: 1,
@@ -161,13 +167,14 @@ export const VaultOnboarding: React.FC<Props> = ({
         salt: saltBase64,
         kdfIterations: 600000,
         authCheck,
+        quickUnlock,
         items: [],
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
 
       await saveVaultSnapshot(newSnapshot);
-      onVaultReady(keyBundle.key, newSnapshot, secretToDeriveFrom);
+      onVaultReady(keyBundle.key, newSnapshot, mnemonic);
     } catch (err: any) {
       setError(`Failed to initialize: ${err.message}`);
     } finally {
@@ -236,22 +243,34 @@ export const VaultOnboarding: React.FC<Props> = ({
       setIsInitializing(true);
       setError(null);
 
-      const secretToDerive = pinPassword.trim() || cleanWords;
       const result = await restoreVault({
         source: 'local',
         backupData: localFileContent,
         mnemonic: cleanWords,
       });
 
-      if (!result.snapshot.authCheck) {
-        result.snapshot.authCheck = await createAuthCheckPayload(result.key, result.snapshot.vaultId);
+      const updatedSnapshot = { ...result.snapshot };
+      if (!updatedSnapshot.authCheck) {
+        updatedSnapshot.authCheck = await createAuthCheckPayload(result.key, updatedSnapshot.vaultId);
       }
 
-      await saveVaultSnapshot(result.snapshot);
+      // If user sets a PIN during restore, configure a local quickUnlock envelope
+      if (pinPassword.trim()) {
+        const pinSalt = generateSalt(16);
+        const pinKeyBundle = await deriveVaultKey(pinPassword.trim(), pinSalt, 100_000);
+        const encryptedMnemonic = await encryptVaultRecord({ mnemonic: cleanWords }, pinKeyBundle.key);
+        updatedSnapshot.quickUnlock = {
+          salt: bytesToBase64(pinSalt),
+          kdfIterations: 100_000,
+          encryptedMnemonic,
+        };
+      }
+
+      await saveVaultSnapshot(updatedSnapshot);
       try {
-        localStorage.setItem(`mountain_last_backup_${result.snapshot.vaultId}`, String(Date.now()));
+        localStorage.setItem(`mountain_last_backup_${updatedSnapshot.vaultId}`, String(Date.now()));
       } catch {}
-      onVaultReady(result.key, result.snapshot, secretToDerive);
+      onVaultReady(result.key, updatedSnapshot, cleanWords);
     } catch (err: any) {
       if (err instanceof DecryptionValidationError) {
         setError(err.message);
@@ -320,7 +339,6 @@ export const VaultOnboarding: React.FC<Props> = ({
       setIsInitializing(true);
       setError(null);
 
-      const secretToDerive = pinPassword.trim() || cleanWords;
       const result = await restoreVault({
         source: 'google_drive',
         fileId: selectedGdriveFile.id,
@@ -328,15 +346,28 @@ export const VaultOnboarding: React.FC<Props> = ({
         accessToken: gdriveToken.trim(),
       });
 
-      if (!result.snapshot.authCheck) {
-        result.snapshot.authCheck = await createAuthCheckPayload(result.key, result.snapshot.vaultId);
+      const updatedSnapshot = { ...result.snapshot };
+      if (!updatedSnapshot.authCheck) {
+        updatedSnapshot.authCheck = await createAuthCheckPayload(result.key, updatedSnapshot.vaultId);
       }
 
-      await saveVaultSnapshot(result.snapshot);
+      // If user sets a PIN during restore, configure a local quickUnlock envelope
+      if (pinPassword.trim()) {
+        const pinSalt = generateSalt(16);
+        const pinKeyBundle = await deriveVaultKey(pinPassword.trim(), pinSalt, 100_000);
+        const encryptedMnemonic = await encryptVaultRecord({ mnemonic: cleanWords }, pinKeyBundle.key);
+        updatedSnapshot.quickUnlock = {
+          salt: bytesToBase64(pinSalt),
+          kdfIterations: 100_000,
+          encryptedMnemonic,
+        };
+      }
+
+      await saveVaultSnapshot(updatedSnapshot);
       try {
-        localStorage.setItem(`mountain_last_backup_${result.snapshot.vaultId}`, String(Date.now()));
+        localStorage.setItem(`mountain_last_backup_${updatedSnapshot.vaultId}`, String(Date.now()));
       } catch {}
-      onVaultReady(result.key, result.snapshot, secretToDerive);
+      onVaultReady(result.key, updatedSnapshot, cleanWords);
     } catch (err: any) {
       if (err instanceof DecryptionValidationError) {
         setError(err.message);
@@ -350,7 +381,7 @@ export const VaultOnboarding: React.FC<Props> = ({
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-zinc-950 text-zinc-100 font-sans">
-      <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6">
+      <div className="w-full max-w-md max-h-[92vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6">
         {/* Brand Header */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -554,19 +585,36 @@ export const VaultOnboarding: React.FC<Props> = ({
               })}
             </div>
 
-            {/* Optional Daily PIN */}
-            <div className="space-y-1 pt-2 border-t border-zinc-800">
+            {/* Optional Daily Quick-Unlock PIN */}
+            <div className="space-y-1.5 pt-3 border-t border-zinc-800">
               <label className="text-xs font-medium text-zinc-300 flex justify-between">
-                <span>Unlock Passphrase</span>
+                <span>Quick-Unlock PIN</span>
                 <span className="text-zinc-400 text-xs normal-case">Optional</span>
               </label>
               <input
                 type="password"
                 value={pinPassword}
                 onChange={(e) => setPinPassword(e.target.value)}
-                placeholder="Optional password or PIN"
-                className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs text-zinc-100 placeholder-zinc-600 outline-none transition"
+                placeholder="Set a local PIN or passcode for quick unlock"
+                className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs text-zinc-100 placeholder-zinc-600 outline-none transition"
               />
+              {pinPassword && (
+                <div className="pt-0.5 space-y-1">
+                  <div className="flex justify-between text-[11px] font-mono">
+                    <span className="text-zinc-500">PIN Strength:</span>
+                    <span className="text-zinc-300 font-semibold">{evaluatePasswordStrength(pinPassword).label}</span>
+                  </div>
+                  <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${evaluatePasswordStrength(pinPassword).color} transition-all duration-300`}
+                      style={{ width: `${evaluatePasswordStrength(pinPassword).percent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              <p className="text-[11px] text-zinc-500 leading-relaxed pt-0.5">
+                Convenient daily unlock on this machine. Your 12 recovery words remain your permanent master key for backups and device transfers.
+              </p>
             </div>
 
             <div className="flex space-x-2.5 pt-2">
@@ -893,77 +941,7 @@ export const VaultOnboarding: React.FC<Props> = ({
                       />
 
                       {/* Collapsible How-To Guide */}
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3 text-xs space-y-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowTokenHelp(!showTokenHelp)}
-                          className="w-full flex items-center justify-between text-zinc-300 hover:text-white font-medium text-left"
-                        >
-                          <span className="flex items-center gap-1.5 text-xs">
-                            <HelpCircle className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
-                            <span>How to get a Google OAuth token (1 minute guide)</span>
-                          </span>
-                          <span className="text-xs text-zinc-400 font-mono">
-                            {showTokenHelp ? 'Hide' : 'View steps'}
-                          </span>
-                        </button>
-
-                        {showTokenHelp && (
-                          <div className="space-y-2 pt-2 border-t border-zinc-800/80 leading-relaxed text-zinc-400 text-xs">
-                            <ol className="list-decimal list-inside space-y-2">
-                              <li>
-                                Open the{' '}
-                                <a
-                                  href="https://developers.google.com/oauthplayground/"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-emerald-400 hover:underline font-medium inline-flex items-center gap-0.5"
-                                >
-                                  Google OAuth 2.0 Playground
-                                  <ExternalLink className="w-2.5 h-2.5" />
-                                </a>.
-                              </li>
-                              <li className="space-y-1.5">
-                                <div>
-                                  In <strong>Step 1</strong>, authorize the Drive scope:
-                                </div>
-                                <div className="flex items-center gap-2 p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg">
-                                  <code className="text-zinc-200 text-xs font-mono flex-1 truncate">
-                                    https://www.googleapis.com/auth/drive.file
-                                  </code>
-                                  <button
-                                    type="button"
-                                    onClick={handleCopyScope}
-                                    className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs rounded transition flex items-center gap-1 shrink-0"
-                                  >
-                                    {copiedScope ? (
-                                      <>
-                                        <Check className="w-3 h-3 text-emerald-400" />
-                                        <span>Copied</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Copy className="w-3 h-3" />
-                                        <span>Copy Scope</span>
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
-                              </li>
-                              <li>
-                                Click <strong className="text-zinc-200">Authorize APIs</strong> and sign in with your Google account.
-                              </li>
-                              <li>
-                                In <strong>Step 2</strong>, click{' '}
-                                <strong className="text-zinc-200">Exchange authorization code for tokens</strong>.
-                              </li>
-                              <li>
-                                Copy the <strong className="text-emerald-300">Access token</strong> (starts with <code className="text-zinc-200 font-mono">ya29...</code>) and paste it into the field above.
-                              </li>
-                            </ol>
-                          </div>
-                        )}
-                      </div>
+                      <GoogleOAuthHelpGuide />
                     </div>
 
                     <button

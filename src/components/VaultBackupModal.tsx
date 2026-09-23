@@ -18,9 +18,8 @@ import {
   Loader2,
   ShieldCheck,
   ExternalLink,
-  HelpCircle,
-  Copy,
 } from 'lucide-react';
+import { GoogleOAuthHelpGuide } from './vault/GoogleOAuthHelpGuide.js';
 
 interface Props {
   isOpen: boolean;
@@ -40,7 +39,6 @@ export const VaultBackupModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [copiedScope, setCopiedScope] = useState(false);
 
   // Google Drive state
   const [gdriveToken, setGdriveToken] = useState(() => {
@@ -50,7 +48,6 @@ export const VaultBackupModal: React.FC<Props> = ({
       return '';
     }
   });
-  const [showTokenHelp, setShowTokenHelp] = useState(false);
 
   const handleReset = () => {
     setDestination('select');
@@ -80,14 +77,6 @@ export const VaultBackupModal: React.FC<Props> = ({
     setGdriveToken(val);
     try {
       sessionStorage.setItem('mountain_gdrive_token', val);
-    } catch {}
-  };
-
-  const handleCopyScope = async () => {
-    try {
-      await navigator.clipboard.writeText('https://www.googleapis.com/auth/drive.file');
-      setCopiedScope(true);
-      setTimeout(() => setCopiedScope(false), 2000);
     } catch {}
   };
 
@@ -182,9 +171,9 @@ export const VaultBackupModal: React.FC<Props> = ({
       aria-labelledby="backup-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in"
     >
-      <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 sm:p-7 space-y-5">
+      <div className="w-full max-w-md max-h-[90vh] flex flex-col bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+        <div className="p-5 sm:p-6 pb-4 flex items-center justify-between border-b border-zinc-800 shrink-0 bg-zinc-900">
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center text-zinc-100">
               <DownloadCloud className="w-4 h-4 text-emerald-400" />
@@ -208,12 +197,14 @@ export const VaultBackupModal: React.FC<Props> = ({
           </button>
         </div>
 
-        {error && (
-          <div className="p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl text-xs text-rose-300 flex items-start space-x-2.5">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0 text-rose-400 mt-0.5" />
-            <span className="leading-snug">{error}</span>
-          </div>
-        )}
+        {/* Scrollable Body */}
+        <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5">
+          {error && (
+            <div className="p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl text-xs text-rose-300 flex items-start space-x-2.5">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 text-rose-400 mt-0.5" />
+              <span className="leading-snug">{error}</span>
+            </div>
+          )}
 
         {/* Success State */}
         {successMessage ? (
@@ -260,11 +251,14 @@ export const VaultBackupModal: React.FC<Props> = ({
                       <HardDrive className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-zinc-100 group-hover:text-white">
-                        Local Backup File
+                      <div className="text-sm font-medium text-zinc-100 group-hover:text-white flex items-center gap-2">
+                        <span>Local Backup File</span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                          Recommended
+                        </span>
                       </div>
                       <div className="text-xs text-zinc-400">
-                        Download encrypted .json backup file directly to your device
+                        Download encrypted .json backup file directly to your local device
                       </div>
                     </div>
                   </div>
@@ -419,7 +413,7 @@ export const VaultBackupModal: React.FC<Props> = ({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-zinc-300">
-                      Google OAuth Access Token
+                      Google OAuth Access Token <span className="text-[10px] font-mono text-zinc-500">(Direct API)</span>
                     </label>
                     <a
                       href="https://developers.google.com/oauthplayground/"
@@ -441,77 +435,7 @@ export const VaultBackupModal: React.FC<Props> = ({
                   />
 
                   {/* Collapsible How-To Guide */}
-                  <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3 text-xs space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowTokenHelp(!showTokenHelp)}
-                      className="w-full flex items-center justify-between text-zinc-300 hover:text-white font-medium text-left"
-                    >
-                      <span className="flex items-center gap-1.5 text-xs">
-                        <HelpCircle className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
-                        <span>How to get a Google OAuth token (1 minute guide)</span>
-                      </span>
-                      <span className="text-xs text-zinc-400 font-mono">
-                        {showTokenHelp ? 'Hide' : 'View steps'}
-                      </span>
-                    </button>
-
-                    {showTokenHelp && (
-                      <div className="space-y-2 pt-2 border-t border-zinc-800/80 leading-relaxed text-zinc-400 text-xs">
-                        <ol className="list-decimal list-inside space-y-2">
-                          <li>
-                            Open the{' '}
-                            <a
-                              href="https://developers.google.com/oauthplayground/"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-emerald-400 hover:underline font-medium inline-flex items-center gap-0.5"
-                            >
-                              Google OAuth 2.0 Playground
-                              <ExternalLink className="w-2.5 h-2.5" />
-                            </a>.
-                          </li>
-                          <li className="space-y-1.5">
-                            <div>
-                              In <strong>Step 1</strong>, authorize the Drive scope:
-                            </div>
-                            <div className="flex items-center gap-2 p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg">
-                              <code className="text-zinc-200 text-xs font-mono flex-1 truncate">
-                                https://www.googleapis.com/auth/drive.file
-                              </code>
-                              <button
-                                type="button"
-                                onClick={handleCopyScope}
-                                className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs rounded transition flex items-center gap-1 shrink-0"
-                              >
-                                {copiedScope ? (
-                                  <>
-                                    <Check className="w-3 h-3 text-emerald-400" />
-                                    <span>Copied</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-3 h-3" />
-                                    <span>Copy Scope</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          </li>
-                          <li>
-                            Click <strong className="text-zinc-200">Authorize APIs</strong> and sign in with your Google account.
-                          </li>
-                          <li>
-                            In <strong>Step 2</strong>, click{' '}
-                            <strong className="text-zinc-200">Exchange authorization code for tokens</strong>.
-                          </li>
-                          <li>
-                            Copy the <strong className="text-emerald-300">Access token</strong> (starts with <code className="text-zinc-200 font-mono">ya29...</code>) and paste it into the field above.
-                          </li>
-                        </ol>
-                      </div>
-                    )}
-                  </div>
+                  <GoogleOAuthHelpGuide />
                 </div>
 
                 {/* 12 Recovery Words Input */}
@@ -575,6 +499,7 @@ export const VaultBackupModal: React.FC<Props> = ({
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   );

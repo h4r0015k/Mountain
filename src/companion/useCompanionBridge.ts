@@ -5,23 +5,25 @@ import { generatePassword } from '../crypto/generator';
 /**
  * Extracts a normalized hostname from a URL string for credential matching.
  */
-function normalizeDomain(rawUrl: string): string {
+export function normalizeDomain(rawUrl: string): string {
   if (!rawUrl) return '';
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
   try {
-    const withProto = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
-      ? rawUrl
-      : `https://${rawUrl}`;
+    const withProto = /^https?:\/\//i.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
     const host = new URL(withProto).hostname.toLowerCase();
     return host.replace(/^www\./, '');
   } catch {
-    return rawUrl.toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+    return trimmed.toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0].split(':')[0].trim();
   }
 }
 
 /**
  * Extracts root brand name (e.g. "instagram" from "instagram.com" or "m.instagram.com").
  */
-function getRootDomain(domain: string): string {
+export function getRootDomain(domain: string): string {
   if (!domain) return '';
   const clean = normalizeDomain(domain);
   const parts = clean.split('.');
@@ -34,9 +36,10 @@ function getRootDomain(domain: string): string {
 /**
  * Robust matching between stored vault items and the current webpage domain.
  */
-function matchesDomainOrTitle(itemUrl: string, itemTitle: string, targetDomain: string): boolean {
+export function matchesDomainOrTitle(itemUrl: string, itemTitle: string, targetDomain: string): boolean {
   if (!targetDomain) return false;
   const cleanTarget = normalizeDomain(targetDomain);
+  if (!cleanTarget) return false;
   const targetRoot = getRootDomain(cleanTarget);
 
   const cleanItemDomain = normalizeDomain(itemUrl || '');
@@ -44,22 +47,43 @@ function matchesDomainOrTitle(itemUrl: string, itemTitle: string, targetDomain: 
   const titleLower = (itemTitle || '').toLowerCase().trim();
 
   // 1. Direct domain match
-  if (cleanItemDomain && cleanTarget && cleanItemDomain === cleanTarget) return true;
+  if (cleanItemDomain && cleanItemDomain === cleanTarget) return true;
 
-  // 2. Subdomain match (e.g. login.instagram.com <-> instagram.com)
-  if (cleanItemDomain && cleanTarget && (
+  // 2. Subdomain match (e.g. login.dev.to <-> dev.to, or dev.to <-> app.dev.to)
+  if (cleanItemDomain && (
     cleanItemDomain.endsWith(`.${cleanTarget}`) ||
     cleanTarget.endsWith(`.${cleanItemDomain}`)
   )) return true;
 
-  // 3. Root brand match (e.g. root "instagram" matches root "instagram")
+  // 3. Root brand match (e.g. root "dev" matches root "dev")
   if (targetRoot && itemRoot && targetRoot === itemRoot) return true;
 
-  // 4. Title contains target root (e.g. Title "Instagram", targetRoot "instagram")
-  if (targetRoot && titleLower.includes(targetRoot)) return true;
+  // 4. Exact title match with clean target or target root
+  if (titleLower && (titleLower === cleanTarget || titleLower === targetRoot)) return true;
 
-  // 5. Target domain contains title (e.g. target "instagram.com" contains title "instagram")
-  if (titleLower.length >= 3 && cleanTarget.includes(titleLower)) return true;
+  // 5. Title contains target domain or target root (e.g. Title "Dev.to Account" or "DEV Community", targetRoot "dev")
+  if (cleanTarget && titleLower.includes(cleanTarget)) return true;
+  if (targetRoot && targetRoot.length >= 2 && titleLower.includes(targetRoot)) return true;
+
+  // 6. Target domain contains title (e.g. target "dev.to" contains title "dev" or "dev.to")
+  if (titleLower.length >= 2 && cleanTarget.includes(titleLower)) return true;
+
+  // 7. Punctuation-stripped comparison (e.g. title "dev to" or "devto" vs target "dev.to")
+  const strippedTarget = cleanTarget.replace(/[^a-z0-9]/g, '');
+  const strippedTitle = titleLower.replace(/[^a-z0-9]/g, '');
+  if (strippedTitle && strippedTarget) {
+    if (strippedTitle === strippedTarget) return true;
+    if (strippedTitle.length >= 3 && strippedTarget.includes(strippedTitle)) return true;
+    if (strippedTarget.length >= 3 && strippedTitle.includes(strippedTarget)) return true;
+  }
+
+  // 8. If itemUrl was not provided or empty, also check if title itself looks like a domain that matches
+  if (!cleanItemDomain && titleLower.includes('.')) {
+    const titleAsDomain = normalizeDomain(titleLower);
+    if (titleAsDomain === cleanTarget || titleAsDomain.endsWith(`.${cleanTarget}`) || cleanTarget.endsWith(`.${titleAsDomain}`)) {
+      return true;
+    }
+  }
 
   return false;
 }
@@ -91,16 +115,31 @@ export interface CompanionBridgeHook {
   unpair: () => void;
 }
 
+const SESSION_STORAGE_KEY = 'mountain_companion_session_token';
+
 export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptions): CompanionBridgeHook {
   const isUnlocked = Array.isArray(arg) ? true : !!arg.isUnlocked;
   const items = Array.isArray(arg) ? arg : (arg.items || []);
   const onSaveLogin = Array.isArray(arg) ? undefined : arg.onSaveLogin;
 
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  const isUnlockedRef = useRef(isUnlocked);
+  isUnlockedRef.current = isUnlocked;
+
   const onSaveLoginRef = useRef(onSaveLogin);
   onSaveLoginRef.current = onSaveLogin;
 
   const [pairingCode, setPairingCode] = useState<string>(() => generateRandomCode());
-  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      try {
+        return window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+      } catch {}
+    }
+    return null;
+  });
 
   const sessionTokenRef = useRef<string | null>(sessionToken);
   sessionTokenRef.current = sessionToken;
@@ -114,42 +153,94 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
     return newCode;
   }, []);
 
+  const updateSessionToken = useCallback((newToken: string | null) => {
+    setSessionToken(newToken);
+    sessionTokenRef.current = newToken;
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      try {
+        if (newToken) {
+          window.sessionStorage.setItem(SESSION_STORAGE_KEY, newToken);
+        } else {
+          window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        }
+      } catch {}
+    }
+  }, []);
+
   const unpair = useCallback(() => {
-    setSessionToken(null);
+    updateSessionToken(null);
     regeneratePairingCode();
-  }, [regeneratePairingCode]);
+  }, [updateSessionToken, regeneratePairingCode]);
 
   // When vault locks, wipe session pairing token immediately
   useEffect(() => {
     if (!isUnlocked) {
-      setSessionToken(null);
+      updateSessionToken(null);
     }
-  }, [isUnlocked]);
+  }, [isUnlocked, updateSessionToken]);
 
-  useEffect(() => {
+  // Broadcast updated status whenever unlock state, item count, or sessionToken changes
+  const broadcastStatus = useCallback(() => {
     (window as any).__MOUNTAIN_SPA_LOADED__ = true;
-    (window as any).__MOUNTAIN_SPA_UNLOCKED__ = isUnlocked;
+    (window as any).__MOUNTAIN_SPA_UNLOCKED__ = isUnlockedRef.current;
 
     const targetOrigin = window.location.origin && window.location.origin !== 'null'
       ? window.location.origin
       : '*';
 
-    const broadcastStatus = () => {
+    window.postMessage(
+      {
+        source: 'MOUNTAIN_SPA',
+        type: 'VAULT_STATUS_BROADCAST',
+        unlocked: isUnlockedRef.current,
+        isPaired: !!sessionTokenRef.current,
+        itemCount: isUnlockedRef.current ? itemsRef.current.length : 0,
+      },
+      targetOrigin
+    );
+  }, []);
+
+  useEffect(() => {
+    broadcastStatus();
+  }, [isUnlocked, items.length, sessionToken, broadcastStatus]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const targetOrigin = window.location.origin && window.location.origin !== 'null'
+        ? window.location.origin
+        : '*';
       window.postMessage(
         {
           source: 'MOUNTAIN_SPA',
           type: 'VAULT_STATUS_BROADCAST',
-          unlocked: isUnlocked,
-          isPaired: !!sessionTokenRef.current,
-          itemCount: isUnlocked ? items.length : 0,
+          unlocked: false,
+          isPaired: false,
+          itemCount: 0,
         },
         targetOrigin
       );
     };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
+    const targetOrigin = window.location.origin && window.location.origin !== 'null'
+      ? window.location.origin
+      : '*';
 
     broadcastStatus();
 
     const handleMessage = async (event: MessageEvent) => {
+      // Security: Accept messages originating from this tab window
+      if (event.source !== window) {
+        return;
+      }
+      if (event.origin && event.origin !== window.location.origin && event.origin !== 'null') {
+        return;
+      }
       if (!event.data || event.data.source !== 'MOUNTAIN_EXTENSION_CONTENT_SCRIPT') {
         return;
       }
@@ -164,9 +255,9 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
               source: 'MOUNTAIN_SPA',
               type: 'PONG',
               requestId,
-              unlocked: isUnlocked,
+              unlocked: isUnlockedRef.current,
               isPaired: !!sessionTokenRef.current,
-              itemCount: isUnlocked ? items.length : 0,
+              itemCount: isUnlockedRef.current ? itemsRef.current.length : 0,
             },
             targetOrigin
           );
@@ -174,7 +265,7 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
         }
 
         case 'PAIR_WITH_CODE': {
-          if (!isUnlocked) {
+          if (!isUnlockedRef.current) {
             window.postMessage(
               {
                 source: 'MOUNTAIN_SPA',
@@ -193,8 +284,7 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
 
           if (cleanedInput && cleanedInput === cleanedCurrent) {
             const newToken = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
-            setSessionToken(newToken);
-            sessionTokenRef.current = newToken;
+            updateSessionToken(newToken);
 
             window.postMessage(
               {
@@ -223,8 +313,7 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
         }
 
         case 'UNPAIR': {
-          setSessionToken(null);
-          sessionTokenRef.current = null;
+          updateSessionToken(null);
           regeneratePairingCode();
 
           window.postMessage(
@@ -252,7 +341,7 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
                 type: 'LOGINS_RESPONSE',
                 requestId,
                 domain: targetDomain,
-                unlocked: isUnlocked,
+                unlocked: isUnlockedRef.current,
                 error: 'UNAUTHORIZED_NOT_PAIRED',
                 logins: [],
               },
@@ -261,14 +350,14 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
             break;
           }
 
-          if (!targetDomain || !isUnlocked) {
+          if (!targetDomain || !isUnlockedRef.current) {
             window.postMessage(
               {
                 source: 'MOUNTAIN_SPA',
                 type: 'LOGINS_RESPONSE',
                 requestId,
                 domain: targetDomain,
-                unlocked: isUnlocked,
+                unlocked: isUnlockedRef.current,
                 logins: [],
               },
               targetOrigin
@@ -277,9 +366,9 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
           }
 
           // Strict domain-scoped credential matching
-          const matchingLogins = items
-            .filter((rec) => rec.item.type === 'LOGIN' && (rec.secret?.password || rec.secret?.username))
-            .filter((rec) => matchesDomainOrTitle(rec.secret?.url || '', rec.item.title || '', targetDomain))
+          const matchingLogins = itemsRef.current
+            .filter((rec) => (rec.item.type || '').toUpperCase() === 'LOGIN' && (rec.secret?.password || rec.secret?.username))
+            .filter((rec) => matchesDomainOrTitle(rec.secret?.url || (rec.item as any)?.url || '', rec.item.title || '', targetDomain))
             .map((rec) => ({
               id: rec.item.id,
               title: rec.item.title,
@@ -345,7 +434,7 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
                 source: 'MOUNTAIN_SPA',
                 type: 'CARDS_RESPONSE',
                 requestId,
-                unlocked: isUnlocked,
+                unlocked: isUnlockedRef.current,
                 error: 'UNAUTHORIZED_NOT_PAIRED',
                 cards: [],
               },
@@ -354,7 +443,7 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
             break;
           }
 
-          if (!isUnlocked) {
+          if (!isUnlockedRef.current) {
             window.postMessage(
               {
                 source: 'MOUNTAIN_SPA',
@@ -368,8 +457,8 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
             break;
           }
 
-          const cards = items
-            .filter((rec) => rec.item.type === 'CARD' && rec.secret?.cardNumber)
+          const cards = itemsRef.current
+            .filter((rec) => (rec.item.type || '').toUpperCase() === 'CARD' && rec.secret?.cardNumber)
             .map((rec) => ({
               id: rec.item.id,
               title: rec.item.title,
@@ -409,7 +498,7 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
             break;
           }
 
-          if (!isUnlocked) {
+          if (!isUnlockedRef.current) {
             window.postMessage(
               {
                 source: 'MOUNTAIN_SPA',
@@ -423,9 +512,9 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
             break;
           }
 
-          const matched = items
-            .filter((rec) => rec.item.type === 'LOGIN' && (rec.secret?.password || rec.secret?.username))
-            .filter((rec) => matchesDomainOrTitle(rec.secret?.url || '', rec.item.title || '', targetDomain));
+          const matched = itemsRef.current
+            .filter((rec) => (rec.item.type || '').toUpperCase() === 'LOGIN' && (rec.secret?.password || rec.secret?.username))
+            .filter((rec) => matchesDomainOrTitle(rec.secret?.url || (rec.item as any)?.url || '', rec.item.title || '', targetDomain));
 
           const userMatch = matched.find((rec) => {
             const secUser = (rec.secret?.username || '').trim().toLowerCase();
@@ -481,7 +570,7 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
             break;
           }
 
-          if (!isUnlocked) {
+          if (!isUnlockedRef.current) {
             window.postMessage(
               {
                 source: 'MOUNTAIN_SPA',
@@ -549,20 +638,9 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
     window.addEventListener('message', handleMessage);
 
     return () => {
-      (window as any).__MOUNTAIN_SPA_UNLOCKED__ = false;
       window.removeEventListener('message', handleMessage);
-      window.postMessage(
-        {
-          source: 'MOUNTAIN_SPA',
-          type: 'VAULT_STATUS_BROADCAST',
-          unlocked: false,
-          isPaired: false,
-          itemCount: 0,
-        },
-        targetOrigin
-      );
     };
-  }, [isUnlocked, items, regeneratePairingCode]);
+  }, [regeneratePairingCode, updateSessionToken]);
 
   return {
     isPaired: !!sessionToken,

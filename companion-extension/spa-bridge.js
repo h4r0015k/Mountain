@@ -7,15 +7,37 @@
  */
 
 (() => {
-  if (window.__MOUNTAIN_BRIDGE_INITIALIZED__) return;
-  window.__MOUNTAIN_BRIDGE_INITIALIZED__ = true;
+  const runtimeId = typeof chrome !== 'undefined' && chrome.runtime?.id ? chrome.runtime.id : 'default';
+  if (window.__MOUNTAIN_BRIDGE_INSTANCES__ && window.__MOUNTAIN_BRIDGE_INSTANCES__[runtimeId]) {
+    return;
+  }
+  window.__MOUNTAIN_BRIDGE_INSTANCES__ = window.__MOUNTAIN_BRIDGE_INSTANCES__ || {};
+  window.__MOUNTAIN_BRIDGE_INSTANCES__[runtimeId] = true;
+
+  function isContextValid() {
+    try {
+      return Boolean(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id);
+    } catch {
+      return false;
+    }
+  }
 
   // Pending callbacks waiting for SPA response
   const pendingRequests = new Map();
 
   // Listen for messages from Mountain SPA in the page world
-  window.addEventListener('message', (event) => {
-    // Only accept messages explicitly originating from the Mountain SPA
+  const handleSpaMessage = (event) => {
+    // If extension was reloaded in chrome://extensions, unhook from old tab
+    if (!isContextValid()) {
+      window.removeEventListener('message', handleSpaMessage);
+      return;
+    }
+
+    // Only accept messages explicitly originating from this window
+    if (event.source !== window) return;
+    if (event.origin && event.origin !== window.location.origin && event.origin !== 'null') {
+      return;
+    }
     if (!event.data || event.data.source !== 'MOUNTAIN_SPA') {
       return;
     }
@@ -25,14 +47,27 @@
     // If it's a broadcast status update or a PONG response
     if (data.type === 'VAULT_STATUS_BROADCAST' || data.type === 'PONG') {
       try {
-        chrome.runtime.sendMessage({
-          action: 'REGISTER_SPA_TAB',
-          unlocked: !!data.unlocked,
-          itemCount: data.itemCount || 0,
-          url: window.location.href,
-        });
+        if (!isContextValid()) {
+          window.removeEventListener('message', handleSpaMessage);
+          return;
+        }
+        chrome.runtime.sendMessage(
+          {
+            action: 'REGISTER_SPA_TAB',
+            unlocked: !!data.unlocked,
+            itemCount: data.itemCount || 0,
+            url: window.location.href,
+          },
+          () => {
+            if (chrome.runtime?.lastError) {
+              // Benign: tab or background worker reloaded
+            }
+          }
+        );
       } catch (err) {
-        console.warn('[Mountain Bridge] Could not send REGISTER_SPA_TAB:', err);
+        if (err?.message?.includes('Extension context invalidated')) {
+          window.removeEventListener('message', handleSpaMessage);
+        }
       }
     }
 
@@ -46,12 +81,27 @@
 
     // Relay any other SPA messages to background
     try {
-      chrome.runtime.sendMessage({
-        action: 'SPA_MESSAGE',
-        payload: data,
-      });
-    } catch {}
-  });
+      if (isContextValid()) {
+        chrome.runtime.sendMessage(
+          {
+            action: 'SPA_MESSAGE',
+            payload: data,
+          },
+          () => {
+            if (chrome.runtime?.lastError) {
+              // Ignore
+            }
+          }
+        );
+      }
+    } catch (err) {
+      if (err?.message?.includes('Extension context invalidated')) {
+        window.removeEventListener('message', handleSpaMessage);
+      }
+    }
+  };
+
+  window.addEventListener('message', handleSpaMessage);
 
   // Listen for requests from background service worker (originating from popup or autofill on target tabs)
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -93,17 +143,23 @@
 
   // If this tab looks like a Mountain host, immediately probe if SPA is already mounted
   const pathname = window.location.pathname.toLowerCase();
+  const hostname = window.location.hostname.toLowerCase();
+  const port = window.location.port;
   const isLikelyMountain =
     !pathname.includes('test-page') &&
     !pathname.includes('/companion-extension/') &&
-    (window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      document.title.toLowerCase().startsWith('mountain —') ||
-      document.title.toLowerCase() === 'mountain');
+    (hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.endsWith('github.io') ||
+      port === '5173' ||
+      port === '4173' ||
+      pathname.includes('/mountain') ||
+      document.title.toLowerCase().includes('mountain'));
 
   if (isLikelyMountain) {
     // Send probe after slight delay to ensure React listeners are bound
     const sendProbe = () => {
+      if (!isContextValid()) return;
       window.postMessage(
         {
           source: 'MOUNTAIN_EXTENSION_CONTENT_SCRIPT',
@@ -115,6 +171,9 @@
     };
 
     sendProbe();
-    setTimeout(sendProbe, 500);
+    setTimeout(sendProbe, 300);
+    setTimeout(sendProbe, 800);
+    setTimeout(sendProbe, 1800);
+    window.addEventListener('load', () => setTimeout(sendProbe, 100), { once: true });
   }
 })();

@@ -183,21 +183,19 @@ function isCandidateMountainTab(tab) {
     return false;
   }
 
-  // Exact dev server ports
+  // Exact dev server ports or localhost or GitHub pages
   const isDevHost =
-    url.includes('localhost:5173') ||
-    url.includes('127.0.0.1:5173') ||
-    url.includes('localhost:4173') ||
-    url.includes('127.0.0.1:4173') ||
-    url.includes('localhost:3000') ||
-    url.includes('127.0.0.1:3000');
+    url.includes('localhost') ||
+    url.includes('127.0.0.1') ||
+    url.includes('0.0.0.0') ||
+    url.includes('github.io/mountain');
 
   if (isDevHost) {
     return true;
   }
 
-  // Official Mountain app title prefix
-  if (title.startsWith('mountain —') || title.startsWith('mountain -') || title === 'mountain') {
+  // Official Mountain app title prefix or keyword
+  if (title.startsWith('mountain —') || title.startsWith('mountain -') || title === 'mountain' || title.includes('mountain')) {
     return true;
   }
 
@@ -210,17 +208,38 @@ async function findMountainTab() {
 
   const tabs = await chrome.tabs.query({});
 
-  // 1. Highest priority: Tab with Mountain title (excluding test page)
+  // 1. Highest priority: Tab with Mountain title and dev server/local port or github.io
   for (const tab of tabs) {
     if (!isCandidateMountainTab(tab)) continue;
     const title = (tab.title || '').toLowerCase().trim();
-    if (title.startsWith('mountain —') || title.startsWith('mountain -') || title === 'mountain') {
+    const url = (tab.url || tab.pendingUrl || '').toLowerCase();
+    if (title.includes('mountain') && (url.includes(':5173') || url.includes('localhost') || url.includes('127.0.0.1') || url.includes('github.io/mountain'))) {
       await setStoredSpaTabId(tab.id);
       return tab.id;
     }
   }
 
-  // 2. Second priority: Dev server ports or loopback (excluding test page)
+  // 2. Second priority: Any tab with Mountain in the title
+  for (const tab of tabs) {
+    if (!isCandidateMountainTab(tab)) continue;
+    const title = (tab.title || '').toLowerCase().trim();
+    if (title.includes('mountain')) {
+      await setStoredSpaTabId(tab.id);
+      return tab.id;
+    }
+  }
+
+  // 3. Third priority: Specific dev port 5173 or 4173
+  for (const tab of tabs) {
+    if (!isCandidateMountainTab(tab)) continue;
+    const url = (tab.url || tab.pendingUrl || '').toLowerCase();
+    if (url.includes(':5173') || url.includes(':4173')) {
+      await setStoredSpaTabId(tab.id);
+      return tab.id;
+    }
+  }
+
+  // 4. Generic loopback or dev server
   for (const tab of tabs) {
     if (!isCandidateMountainTab(tab)) continue;
     await setStoredSpaTabId(tab.id);
@@ -369,6 +388,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (sender.tab && sender.tab.id) {
         activeSpaTabId = sender.tab.id;
         await setStoredSpaTabId(sender.tab.id);
+        if (message.url) {
+          try {
+            await chrome.storage.local.set({ last_mountain_url: message.url });
+          } catch {}
+        }
       }
       const token = await getStoredToken();
       if (message.unlocked !== undefined) {
@@ -389,7 +413,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         await chrome.tabs.update(existingTabId, { active: true });
         sendResponse({ success: true, tabId: existingTabId });
       } else {
-        const newTab = await chrome.tabs.create({ url: 'http://localhost:5173' });
+        let targetUrl = 'http://localhost:5173';
+        try {
+          const stored = await chrome.storage.local.get('last_mountain_url');
+          if (stored && stored.last_mountain_url) {
+            targetUrl = stored.last_mountain_url;
+          }
+        } catch {}
+        const newTab = await chrome.tabs.create({ url: targetUrl });
         activeSpaTabId = newTab.id;
         await setStoredSpaTabId(newTab.id);
         sendResponse({ success: true, tabId: newTab.id });
@@ -448,8 +479,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === 'CHECK_STATUS') {
     (async () => {
-      const tabId = await findMountainTab();
+      let tabId = await findMountainTab();
       if (!tabId) {
+        if (lastKnownStatus.lastChecked && Date.now() - lastKnownStatus.lastChecked < 10000 && lastKnownStatus.unlocked) {
+          sendResponse({
+            connected: true,
+            unlocked: true,
+            isPaired: lastKnownStatus.isPaired,
+            count: lastKnownStatus.itemCount || 0,
+          });
+          return;
+        }
+
         sendResponse({
           connected: false,
           unlocked: false,
@@ -460,45 +501,60 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       const token = await getStoredToken();
+      let response = null;
 
       try {
-        const response = await sendToMountainSpa(tabId, {
+        response = await sendToMountainSpa(tabId, {
           target: 'MOUNTAIN_SPA',
           action: 'CHECK_STATUS',
         });
-
-        if (response && response.unlocked !== undefined) {
-          lastKnownStatus.unlocked = !!response.unlocked;
-          lastKnownStatus.isPaired = !!token;
-          lastKnownStatus.itemCount = response.itemCount || 0;
-          lastKnownStatus.lastChecked = Date.now();
-          sendResponse({
-            connected: true,
-            unlocked: !!response.unlocked,
-            isPaired: !!token,
-            count: response.itemCount || 0,
-          });
-        } else if (response && response.error) {
-          sendResponse({
-            connected: false,
-            unlocked: false,
-            isPaired: false,
-            message: response.error,
-          });
-        } else {
-          sendResponse({
-            connected: true,
-            unlocked: false,
-            isPaired: false,
-            message: 'Mountain is locked',
-          });
-        }
       } catch (err) {
+        // Tab not responding, invalidate cache and re-scan
+        activeSpaTabId = null;
+        await setStoredSpaTabId(null);
+        const retryTabId = await findMountainTab();
+        if (retryTabId && retryTabId !== tabId) {
+          tabId = retryTabId;
+          try {
+            response = await sendToMountainSpa(tabId, {
+              target: 'MOUNTAIN_SPA',
+              action: 'CHECK_STATUS',
+            });
+          } catch {}
+        }
+      }
+
+      if (response && response.unlocked !== undefined) {
+        lastKnownStatus.unlocked = !!response.unlocked;
+        lastKnownStatus.isPaired = !!token;
+        lastKnownStatus.itemCount = response.itemCount || 0;
+        lastKnownStatus.lastChecked = Date.now();
+        sendResponse({
+          connected: true,
+          unlocked: !!response.unlocked,
+          isPaired: !!token,
+          count: response.itemCount || 0,
+        });
+      } else if (response && response.error) {
+        sendResponse({
+          connected: true,
+          unlocked: false,
+          isPaired: false,
+          message: response.error,
+        });
+      } else if (lastKnownStatus.lastChecked && Date.now() - lastKnownStatus.lastChecked < 10000 && lastKnownStatus.unlocked) {
+        sendResponse({
+          connected: true,
+          unlocked: true,
+          isPaired: !!token,
+          count: lastKnownStatus.itemCount || 0,
+        });
+      } else {
         sendResponse({
           connected: false,
           unlocked: false,
           isPaired: false,
-          message: err.message || 'Could not connect to Mountain tab',
+          message: 'Could not connect to Mountain tab',
         });
       }
     })();
@@ -507,7 +563,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === 'GET_LOGINS') {
     (async () => {
-      const tabId = await findMountainTab();
+      let tabId = await findMountainTab();
       if (!tabId) {
         sendResponse({ connected: false, unlocked: false, isPaired: false, logins: [] });
         return;
@@ -515,22 +571,38 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       const token = await getStoredToken();
       if (!token) {
-        sendResponse({ connected: true, unlocked: true, isPaired: false, error: 'NOT_PAIRED', logins: [] });
+        sendResponse({ connected: true, unlocked: false, isPaired: false, error: 'NOT_PAIRED', logins: [] });
         return;
       }
 
       try {
-        const response = await sendToMountainSpa(tabId, {
-          target: 'MOUNTAIN_SPA',
-          action: 'GET_LOGINS',
-          domain: message.domain,
-          token,
-        });
+        let response = null;
+        try {
+          response = await sendToMountainSpa(tabId, {
+            target: 'MOUNTAIN_SPA',
+            action: 'GET_LOGINS',
+            domain: message.domain,
+            token,
+          });
+        } catch {
+          activeSpaTabId = null;
+          await setStoredSpaTabId(null);
+          const retryTabId = await findMountainTab();
+          if (retryTabId && retryTabId !== tabId) {
+            tabId = retryTabId;
+            response = await sendToMountainSpa(tabId, {
+              target: 'MOUNTAIN_SPA',
+              action: 'GET_LOGINS',
+              domain: message.domain,
+              token,
+            });
+          }
+        }
 
         if (response && response.error === 'UNAUTHORIZED_NOT_PAIRED') {
           await setStoredToken(null);
           lastKnownStatus.isPaired = false;
-          sendResponse({ connected: true, unlocked: true, isPaired: false, error: 'UNAUTHORIZED_NOT_PAIRED', logins: [] });
+          sendResponse({ connected: true, unlocked: false, isPaired: false, error: 'UNAUTHORIZED_NOT_PAIRED', logins: [] });
           return;
         }
 

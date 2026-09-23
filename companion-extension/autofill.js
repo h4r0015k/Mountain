@@ -19,6 +19,14 @@
 
   let lastTargetInput = null;
 
+  function isContextValid() {
+    try {
+      return Boolean(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id);
+    } catch {
+      return false;
+    }
+  }
+
   function showToast(message, type = 'success') {
     const existing = document.querySelector('.mountain-toast');
     if (existing) existing.remove();
@@ -160,12 +168,35 @@
     if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'L' || e.key === 'l')) {
       e.preventDefault();
 
+      if (!isContextValid()) {
+        showToast('Extension reloaded. Please refresh this page.', 'error');
+        return;
+      }
+
       chrome.runtime.sendMessage({ action: 'GET_LOGINS', domain: window.location.hostname }, (response) => {
-        const isUnlocked = response?.unlocked !== undefined ? !!response.unlocked : (Array.isArray(response?.logins) && response.logins.length > 0);
-        if (response && isUnlocked && response.logins && response.logins.length > 0) {
-          executeAutofill(response.logins[0]);
-        } else if (response && !isUnlocked) {
+        if (!response) {
+          showToast('Could not reach Mountain extension', 'error');
+          return;
+        }
+
+        if (response.connected === false) {
+          showToast('Mountain tab not open. Please open Mountain dashboard.', 'error');
+          return;
+        }
+
+        if (response.error === 'UNAUTHORIZED_NOT_PAIRED' || response.error === 'NOT_PAIRED' || response.isPaired === false) {
+          showToast('Companion not paired. Enter 6-digit code in extension popup.', 'error');
+          return;
+        }
+
+        const isUnlocked = response.unlocked !== undefined ? !!response.unlocked : (Array.isArray(response.logins) && response.logins.length > 0);
+        if (!isUnlocked) {
           showToast('Mountain vault is locked. Unlock in Mountain tab.', 'error');
+          return;
+        }
+
+        if (response.logins && response.logins.length > 0) {
+          executeAutofill(response.logins[0]);
         } else {
           showToast(`No matching credentials found for ${window.location.hostname}`, 'error');
         }

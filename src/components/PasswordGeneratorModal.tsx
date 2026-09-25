@@ -6,11 +6,23 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSelectPassword?: (password: string) => void;
+  onSelect?: (password: string) => void;
+  title?: string;
+  submitLabel?: string;
 }
 
 const LENGTH_PRESETS = [16, 20, 24, 32];
 
-export const PasswordGeneratorModal: React.FC<Props> = ({ isOpen, onClose, onSelectPassword }) => {
+export const PasswordGeneratorModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  onSelectPassword,
+  onSelect,
+  title = 'Password Generator',
+  submitLabel = 'Use Password',
+}) => {
+  const handleSelect = onSelectPassword || onSelect;
+
   const [options, setOptions] = useState<GeneratorOptions>({
     length: 20,
     uppercase: true,
@@ -43,7 +55,10 @@ export const PasswordGeneratorModal: React.FC<Props> = ({ isOpen, onClose, onSel
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -87,9 +102,13 @@ export const PasswordGeneratorModal: React.FC<Props> = ({ isOpen, onClose, onSel
             </div>
             <div>
               <h3 id="generator-title" className="text-sm font-semibold text-white">
-                Password Generator
+                {title}
               </h3>
-              <p className="text-xs text-zinc-400">Cryptographically secure random characters</p>
+              <p className="text-xs text-zinc-400">
+                {title.toLowerCase().includes('api')
+                  ? 'Cryptographically secure random key'
+                  : 'Cryptographically secure random characters'}
+              </p>
             </div>
           </div>
           <button
@@ -130,30 +149,38 @@ export const PasswordGeneratorModal: React.FC<Props> = ({ isOpen, onClose, onSel
           </div>
         </div>
 
-        {/* Quick presets & action buttons */}
+        {/* Action buttons: Use Password (Primary) & Copy (Secondary) */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleCopy}
-            disabled={!password}
-            className="flex-1 flex items-center justify-center space-x-1.5 py-2 px-3 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold text-xs rounded-xl transition tactile-btn disabled:opacity-40"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copied' : 'Copy Password'}</span>
-          </button>
-
-          {onSelectPassword && (
+          {handleSelect && (
             <button
+              type="button"
               onClick={() => {
                 if (password) {
-                  onSelectPassword(password);
+                  handleSelect(password);
                   onClose();
                 }
               }}
-              className="flex-1 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-semibold transition border border-zinc-700"
+              disabled={!password}
+              className="flex-1 flex items-center justify-center space-x-1.5 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-semibold text-xs rounded-xl transition shadow-sm disabled:opacity-40"
             >
-              Use Password
+              <Check className="w-3.5 h-3.5" />
+              <span>{submitLabel}</span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={handleCopy}
+            disabled={!password}
+            className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl text-xs transition disabled:opacity-40 ${
+              handleSelect
+                ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 font-medium'
+                : 'flex-1 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold tactile-btn'
+            }`}
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
+          </button>
         </div>
 
         {/* Configuration Options */}

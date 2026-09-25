@@ -66,6 +66,7 @@ export const VaultBackupModal: React.FC<Props> = ({
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.stopPropagation();
         handleClose();
       }
     };

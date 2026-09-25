@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { VaultItemType, VaultSecretPayload } from '../../models/vault.js';
 import {
   X,
@@ -10,12 +10,17 @@ import {
   Terminal,
   FileText,
   Sparkles,
+  RefreshCw,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { getTypeLabel, RecordItemIconBadge } from './CategoryBadges.js';
 import { evaluatePasswordStrength } from '../../crypto/strength.js';
+import { generatePassword } from '../../crypto/generator.js';
 
 interface Props {
   isOpen: boolean;
+  inline?: boolean;
   editingItemId: string | null;
   newItemType: VaultItemType;
   setNewItemType: (type: VaultItemType) => void;
@@ -105,29 +110,99 @@ export const RecordFormDrawer: React.FC<Props> = ({
   onClose,
   onSubmit,
   onOpenGenerator,
+  inline = false,
 }) => {
-  if (!isOpen) return null;
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showApiKey, setShowApiKey] = React.useState(false);
+
+  // Inline Password Generator State
+  const [showInlineGen, setShowInlineGen] = React.useState(false);
+  const [genLength, setGenLength] = React.useState(20);
+  const [genUppercase, setGenUppercase] = React.useState(true);
+  const [genLowercase, setGenLowercase] = React.useState(true);
+  const [genDigits, setGenDigits] = React.useState(true);
+  const [genSymbols, setGenSymbols] = React.useState(true);
+
+  const generateAndSetPassword = (
+    len = genLength,
+    upper = genUppercase,
+    lower = genLowercase,
+    digs = genDigits,
+    syms = genSymbols
+  ) => {
+    try {
+      const pwd = generatePassword({
+        length: len,
+        uppercase: upper,
+        lowercase: lower,
+        digits: digs,
+        symbols: syms,
+        avoidAmbiguous: true,
+      });
+      setNewItemPassword(pwd);
+    } catch {}
+  };
+
+  const handleTogglePasswordGen = () => {
+    if (!showInlineGen) {
+      generateAndSetPassword();
+      setShowInlineGen(true);
+      setShowPassword(true);
+    } else {
+      setShowInlineGen(false);
+    }
+  };
+
+  const handleGenerateApiKey = () => {
+    try {
+      const token = generatePassword({
+        length: 32,
+        uppercase: true,
+        lowercase: true,
+        digits: true,
+        symbols: false,
+      });
+      setApiKey(`sk_live_${token}`);
+      setShowApiKey(true);
+    } catch {}
+  };
 
   const passwordStrength = useMemo(() => {
     return evaluatePasswordStrength(newItemPassword);
   }, [newItemPassword]);
 
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="drawer-title"
-      className="fixed inset-0 z-50 flex justify-end animate-fade-in"
-    >
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
-      />
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showInlineGen) {
+          e.stopPropagation();
+          setShowInlineGen(false);
+          return;
+        }
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, showInlineGen, onClose]);
 
-      {/* Drawer */}
-      <div className="relative z-10 w-full sm:w-[480px] max-w-[92vw] h-full bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col min-w-0">
-        <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between">
+  if (!isOpen) return null;
+
+  const innerContent = (
+    <div
+      role={inline ? 'region' : undefined}
+      aria-label={editingItemId ? 'Edit Record' : 'New Record'}
+      className={`flex flex-col min-w-0 ${
+        inline
+          ? 'h-full w-full bg-zinc-950/60 overflow-hidden'
+          : 'relative z-10 w-full sm:w-[480px] max-w-[92vw] h-full bg-zinc-900 border-l border-zinc-800 shadow-2xl'
+      }`}
+    >
+      {/* Header */}
+      <div className={`p-4 sm:p-5 border-b border-zinc-800/80 shrink-0 ${inline ? 'bg-zinc-950/80' : 'bg-zinc-900'}`}>
+        <div className={`${inline ? 'max-w-2xl xl:max-w-3xl w-full mx-auto' : 'w-full'} flex items-center justify-between gap-4`}>
           <div className="flex items-center space-x-3 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-100 shrink-0">
               {editingItemId ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -142,23 +217,26 @@ export const RecordFormDrawer: React.FC<Props> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors focus-ring shrink-0"
-            title="Close drawer"
-            aria-label="Close drawer"
+            title={inline ? 'Cancel (Esc)' : 'Close drawer (Esc)'}
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+      </div>
 
-        {drawerError && (
-          <div className="m-4 p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl text-xs text-rose-300 flex items-start space-x-2.5">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
-            <span className="leading-snug">{drawerError}</span>
-          </div>
-        )}
+      {drawerError && (
+        <div className={`${inline ? 'max-w-2xl xl:max-w-3xl w-full mx-auto mt-4' : 'm-4'} p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl text-xs text-rose-300 flex items-start space-x-2.5`}>
+          <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+          <span className="leading-snug">{drawerError}</span>
+        </div>
+      )}
 
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 min-w-0">
+      <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 min-w-0">
+        <div className={`${inline ? 'max-w-2xl xl:max-w-3xl w-full mx-auto' : 'w-full'} space-y-4`}>
           {/* Type Switcher */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
@@ -232,20 +310,129 @@ export const RecordFormDrawer: React.FC<Props> = ({
                   <label className="text-xs font-medium text-zinc-300">Password</label>
                   <button
                     type="button"
-                    onClick={() => onOpenGenerator('password')}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 focus-ring rounded"
+                    onClick={handleTogglePasswordGen}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 focus-ring rounded font-medium transition"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Generate Strong Password</span>
+                    <span>{showInlineGen ? 'Hide Generator' : 'Generate Password'}</span>
                   </button>
                 </div>
-                <input
-                  type="password"
-                  value={newItemPassword}
-                  onChange={(e) => setNewItemPassword(e.target.value)}
-                  placeholder="••••••••••••••••"
-                  className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs sm:text-sm font-mono text-zinc-100 placeholder-zinc-500 outline-none transition"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newItemPassword}
+                    onChange={(e) => setNewItemPassword(e.target.value)}
+                    placeholder="••••••••••••••••"
+                    className="w-full pl-3.5 pr-10 py-2.5 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs sm:text-sm font-mono text-zinc-100 placeholder-zinc-500 outline-none transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-2.5 p-1 text-zinc-400 hover:text-zinc-200 rounded transition"
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Inline Collapsible Password Generator (No Modal Over Drawer) */}
+                {showInlineGen && (
+                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3 animate-fade-in text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400 font-medium">Length</span>
+                      <div className="flex items-center gap-1.5">
+                        {[16, 20, 24, 32].map((len) => (
+                          <button
+                            key={len}
+                            type="button"
+                            onClick={() => {
+                              setGenLength(len);
+                              generateAndSetPassword(len);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg font-mono text-xs transition ${
+                              genLength === len
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold'
+                                : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border border-zinc-800'
+                            }`}
+                          >
+                            {len}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <label className="flex items-center gap-2 text-zinc-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={genUppercase}
+                          onChange={(e) => {
+                            setGenUppercase(e.target.checked);
+                            generateAndSetPassword(genLength, e.target.checked);
+                          }}
+                          className="rounded border-zinc-700 text-emerald-500 focus:ring-0 bg-zinc-900"
+                        />
+                        <span>Uppercase (A-Z)</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-zinc-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={genLowercase}
+                          onChange={(e) => {
+                            setGenLowercase(e.target.checked);
+                            generateAndSetPassword(genLength, genUppercase, e.target.checked);
+                          }}
+                          className="rounded border-zinc-700 text-emerald-500 focus:ring-0 bg-zinc-900"
+                        />
+                        <span>Lowercase (a-z)</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-zinc-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={genDigits}
+                          onChange={(e) => {
+                            setGenDigits(e.target.checked);
+                            generateAndSetPassword(genLength, genUppercase, genLowercase, e.target.checked);
+                          }}
+                          className="rounded border-zinc-700 text-emerald-500 focus:ring-0 bg-zinc-900"
+                        />
+                        <span>Numbers (0-9)</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-zinc-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={genSymbols}
+                          onChange={(e) => {
+                            setGenSymbols(e.target.checked);
+                            generateAndSetPassword(genLength, genUppercase, genLowercase, genDigits, e.target.checked);
+                          }}
+                          className="rounded border-zinc-700 text-emerald-500 focus:ring-0 bg-zinc-900"
+                        />
+                        <span>Symbols (!@#$)</span>
+                      </label>
+                    </div>
+
+                    <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => generateAndSetPassword()}
+                        className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-medium transition"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Regenerate</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowInlineGen(false)}
+                        className="text-zinc-500 hover:text-zinc-300 transition"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {newItemPassword && (
                   <div className="pt-1 space-y-1">
                     <div className="flex justify-between text-[11px] font-mono">
@@ -366,20 +553,30 @@ export const RecordFormDrawer: React.FC<Props> = ({
                   <label className="text-xs font-medium text-zinc-300">API Key / Token</label>
                   <button
                     type="button"
-                    onClick={() => onOpenGenerator('apiKey')}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 focus-ring rounded"
+                    onClick={handleGenerateApiKey}
+                    className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 focus-ring rounded font-medium transition"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Generate Key</span>
+                    <span>Generate Secure Key</span>
                   </button>
                 </div>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk_live_..."
-                  className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs sm:text-sm font-mono text-zinc-100 placeholder-zinc-500 outline-none transition"
-                />
+                <div className="relative">
+                  <input
+                    type={showApiKey ? 'text' : 'password'}
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="sk_live_..."
+                    className="w-full pl-3.5 pr-10 py-2.5 bg-zinc-950 border border-zinc-800 focus-ring rounded-xl text-xs sm:text-sm font-mono text-zinc-100 placeholder-zinc-500 outline-none transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="absolute right-2.5 top-2.5 p-1 text-zinc-400 hover:text-zinc-200 rounded transition"
+                    title={showApiKey ? 'Hide key' : 'Show key'}
+                  >
+                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -447,8 +644,28 @@ export const RecordFormDrawer: React.FC<Props> = ({
               {isSaving ? 'Encrypting & Saving...' : editingItemId ? 'Update Record' : 'Save Record'}
             </button>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
+    </div>
+  );
+
+  if (inline) {
+    return innerContent;
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="drawer-title"
+      className="fixed inset-0 z-50 flex justify-end animate-fade-in"
+    >
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+      />
+      {innerContent}
     </div>
   );
 };

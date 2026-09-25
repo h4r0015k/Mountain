@@ -46,17 +46,32 @@ export function matchesDomainOrTitle(itemUrl: string, itemTitle: string, targetD
   const itemRoot = getRootDomain(cleanItemDomain);
   const titleLower = (itemTitle || '').toLowerCase().trim();
 
-  // 1. Direct domain match
-  if (cleanItemDomain && cleanItemDomain === cleanTarget) return true;
+  // If itemUrl has a domain specified, enforce strict domain hierarchy
+  if (cleanItemDomain) {
+    // 1. Exact match
+    if (cleanItemDomain === cleanTarget) return true;
 
-  // 2. Subdomain match (e.g. login.dev.to <-> dev.to, or dev.to <-> app.dev.to)
-  if (cleanItemDomain && (
-    cleanItemDomain.endsWith(`.${cleanTarget}`) ||
-    cleanTarget.endsWith(`.${cleanItemDomain}`)
-  )) return true;
+    // 2. Subdomain match (e.g. login.dev.to <-> dev.to, or dev.to <-> app.dev.to)
+    if (
+      cleanItemDomain.endsWith(`.${cleanTarget}`) ||
+      cleanTarget.endsWith(`.${cleanItemDomain}`)
+    ) {
+      return true;
+    }
 
-  // 3. Root brand match (e.g. root "dev" matches root "dev")
-  if (targetRoot && itemRoot && targetRoot === itemRoot) return true;
+    // Security: If both item URL and target have explicit domains, require matching TLD
+    // to prevent cross-site phishing (e.g. paypal.com vs paypal.xyz)
+    const getTld = (d: string) => {
+      const parts = d.split('.');
+      return parts.length >= 2 ? parts[parts.length - 1] : '';
+    };
+    if (getTld(cleanItemDomain) !== getTld(cleanTarget)) {
+      return false;
+    }
+
+    // 3. Same root brand under same TLD (e.g. root "dev" under .to)
+    if (targetRoot && itemRoot && targetRoot === itemRoot) return true;
+  }
 
   // 4. Exact title match with clean target or target root
   if (titleLower && (titleLower === cleanTarget || titleLower === targetRoot)) return true;
@@ -147,9 +162,15 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
   const pairingCodeRef = useRef<string>(pairingCode);
   pairingCodeRef.current = pairingCode;
 
+  // Brute-force protection: track consecutive failed pairing attempts and lockout expiry
+  const failedPairingAttemptsRef = useRef<number>(0);
+  const pairingLockoutUntilRef = useRef<number>(0);
+
   const regeneratePairingCode = useCallback(() => {
     const newCode = generateRandomCode();
     setPairingCode(newCode);
+    failedPairingAttemptsRef.current = 0;
+    pairingLockoutUntilRef.current = 0;
     return newCode;
   }, []);
 
@@ -279,10 +300,30 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
             break;
           }
 
+          // Active lockout check
+          const now = Date.now();
+          if (now < pairingLockoutUntilRef.current) {
+            const waitSec = Math.ceil((pairingLockoutUntilRef.current - now) / 1000);
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'PAIR_RESPONSE',
+                requestId,
+                success: false,
+                error: 'PAIRING_LOCKED_OUT',
+                message: `Too many failed pairing attempts. Please wait ${waitSec}s before retrying.`,
+              },
+              targetOrigin
+            );
+            break;
+          }
+
           const cleanedInput = String(code || '').replace(/\D/g, '');
           const cleanedCurrent = pairingCodeRef.current.replace(/\D/g, '');
 
           if (cleanedInput && cleanedInput === cleanedCurrent) {
+            failedPairingAttemptsRef.current = 0;
+            pairingLockoutUntilRef.current = 0;
             const newToken = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
             updateSessionToken(newToken);
 
@@ -298,16 +339,37 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
             );
             broadcastStatus();
           } else {
-            window.postMessage(
-              {
-                source: 'MOUNTAIN_SPA',
-                type: 'PAIR_RESPONSE',
-                requestId,
-                success: false,
-                error: 'INVALID_PAIRING_CODE',
-              },
-              targetOrigin
-            );
+            failedPairingAttemptsRef.current += 1;
+            if (failedPairingAttemptsRef.current >= 3) {
+              // Enforce 60-second lockout and invalidate the pairing code
+              pairingLockoutUntilRef.current = Date.now() + 60000;
+              failedPairingAttemptsRef.current = 0;
+              regeneratePairingCode();
+
+              window.postMessage(
+                {
+                  source: 'MOUNTAIN_SPA',
+                  type: 'PAIR_RESPONSE',
+                  requestId,
+                  success: false,
+                  error: 'PAIRING_LOCKED_OUT',
+                  message: 'Too many invalid attempts. The pairing code has been revoked and regenerated for security.',
+                },
+                targetOrigin
+              );
+            } else {
+              window.postMessage(
+                {
+                  source: 'MOUNTAIN_SPA',
+                  type: 'PAIR_RESPONSE',
+                  requestId,
+                  success: false,
+                  error: 'INVALID_PAIRING_CODE',
+                  attemptsRemaining: 3 - failedPairingAttemptsRef.current,
+                },
+                targetOrigin
+              );
+            }
           }
           break;
         }
@@ -457,8 +519,11 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
             break;
           }
 
+          const targetDomain = normalizeDomain(domain || '');
+
           const cards = itemsRef.current
             .filter((rec) => (rec.item.type || '').toUpperCase() === 'CARD' && rec.secret?.cardNumber)
+            .filter((rec) => !targetDomain || matchesDomainOrTitle(rec.secret?.url || '', rec.item.title || '', targetDomain))
             .map((rec) => ({
               id: rec.item.id,
               title: rec.item.title,

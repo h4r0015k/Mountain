@@ -88,4 +88,23 @@ describe("Mountain Vault Encryption (AES-256-GCM)", () => {
     // Decryption must reject
     await expect(decryptVaultRecord(encrypted, wrongKey)).rejects.toThrow();
   });
+
+  it("binds additional authenticated data (AAD) and rejects when AAD differs", async () => {
+    const record = { apiKey: "secret_api_key_12345" };
+    const aad = new TextEncoder().encode("record-item-id-101:vault-id-456");
+    const wrongAad = new TextEncoder().encode("record-item-id-999:vault-id-456");
+
+    // Encrypt with AAD
+    const encrypted = await encryptVaultRecord(record, masterKey, aad);
+
+    // Decrypt with correct AAD -> Success
+    const decrypted = await decryptVaultRecord<typeof record>(encrypted, masterKey, aad);
+    expect(decrypted.apiKey).toBe("secret_api_key_12345");
+
+    // Decrypt with incorrect or mismatched AAD -> Must reject (tamper detection)
+    await expect(decryptVaultRecord(encrypted, masterKey, wrongAad)).rejects.toThrow();
+
+    // Decrypt without AAD when AAD was bound -> Must reject
+    await expect(decryptVaultRecord(encrypted, masterKey)).rejects.toThrow();
+  });
 });

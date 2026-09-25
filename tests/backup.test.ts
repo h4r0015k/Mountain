@@ -154,6 +154,27 @@ describe('Mountain Backup & Recovery Subsystem - Local File & Cryptographic Veri
         })
       ).rejects.toThrow(DecryptionValidationError);
     });
+
+    it('strictly strips quickUnlock PIN envelope from exported backup to prevent offline cracking', async () => {
+      const snapshotWithPin: VaultSnapshot = {
+        ...testSnapshot,
+        quickUnlock: {
+          salt: 'mock-pin-salt-12345678',
+          iterations: 100_000,
+          encryptedMnemonic: {
+            iv: 'mock-iv',
+            ciphertext: 'mock-ciphertext',
+            version: 1,
+          },
+        },
+      };
+
+      const result = await createLocalBackup(snapshotWithPin, validMnemonic);
+      expect(result.snapshot.quickUnlock).toBeUndefined();
+
+      const parsed = JSON.parse(result.json);
+      expect(parsed.quickUnlock).toBeUndefined();
+    });
   });
 
   describe('Local Backup Restoration', () => {

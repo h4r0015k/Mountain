@@ -260,6 +260,11 @@ export async function createGoogleDriveBackup(
     items: [...snapshot.items],
   };
 
+  // Security: Never export the device-bound quickUnlock PIN envelope to cloud storage.
+  if (exportSnapshot.quickUnlock) {
+    delete exportSnapshot.quickUnlock;
+  }
+
   if (!exportSnapshot.authCheck) {
     exportSnapshot.authCheck = await createAuthCheckPayload(key, exportSnapshot.vaultId);
   }

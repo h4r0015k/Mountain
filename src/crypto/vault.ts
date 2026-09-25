@@ -29,7 +29,8 @@ export interface EncryptedVaultPayload {
  */
 export async function encryptVaultRecord<T>(
   data: T,
-  key: CryptoKey
+  key: CryptoKey,
+  additionalData?: Uint8Array
 ): Promise<EncryptedVaultPayload> {
   if (!data) {
     throw new Error("Cannot encrypt empty or null data");
@@ -47,11 +48,14 @@ export async function encryptVaultRecord<T>(
   crypto.getRandomValues(iv);
 
   // 3. Encrypt via native hardware-accelerated WebCrypto AES-GCM
+  const algorithmParams: AesGcmParams = {
+    name: "AES-GCM",
+    iv: iv,
+    ...(additionalData ? { additionalData } : {}),
+  };
+
   const ciphertextBuffer = await crypto.subtle.encrypt(
-    {
-      name: "AES-GCM",
-      iv: iv,
-    },
+    algorithmParams,
     key,
     plaintextBytes
   );
@@ -70,10 +74,12 @@ export async function encryptVaultRecord<T>(
  *
  * @param payload - The encrypted Base64 IV and ciphertext bundle
  * @param key - The 256-bit AES-GCM CryptoKey derived from master credentials
+ * @param additionalData - Optional authenticated associated data (AAD) bound during encryption
  */
 export async function decryptVaultRecord<T>(
   payload: EncryptedVaultPayload,
-  key: CryptoKey
+  key: CryptoKey,
+  additionalData?: Uint8Array
 ): Promise<T> {
   if (!payload || !payload.iv || !payload.ciphertext) {
     throw new Error("Invalid encrypted payload structure");
@@ -92,11 +98,14 @@ export async function decryptVaultRecord<T>(
 
   // 2. Decrypt and verify authentication tag via WebCrypto
   // Throws OperationError automatically if authentication tag verification fails
+  const algorithmParams: AesGcmParams = {
+    name: "AES-GCM",
+    iv: iv,
+    ...(additionalData ? { additionalData } : {}),
+  };
+
   const decryptedBuffer = await crypto.subtle.decrypt(
-    {
-      name: "AES-GCM",
-      iv: iv,
-    },
+    algorithmParams,
     key,
     ciphertextBytes
   );

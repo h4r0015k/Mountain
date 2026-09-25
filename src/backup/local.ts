@@ -90,6 +90,13 @@ export async function createLocalBackup(
     items: [...snapshot.items],
   };
 
+  // Security: Never export the device-bound quickUnlock PIN envelope.
+  // Storing a 100k-iteration PIN envelope in backups reduces 128-bit mnemonic entropy
+  // down to a 4-to-6 digit PIN against offline dictionary attacks.
+  if (exportSnapshot.quickUnlock) {
+    delete exportSnapshot.quickUnlock;
+  }
+
   if (!exportSnapshot.authCheck) {
     exportSnapshot.authCheck = await createAuthCheckPayload(key, exportSnapshot.vaultId);
   }

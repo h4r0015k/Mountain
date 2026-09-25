@@ -79,6 +79,16 @@ The `companion-extension/` directory contains an unpacked Manifest V3 browser ex
 
 ---
 
+## Tech Stack & Architecture
+
+- **Frontend**: TypeScript, React 18, Tailwind CSS, Lucide Icons, Vite
+- **Cryptography**: Web Crypto API (SubtleCrypto: AES-256-GCM, PBKDF2), `@scure/bip39`
+- **Storage**: Browser IndexedDB (Local-First)
+- **Development**: Developed with AI pair-programming assistance from Google Gemini.
+
+---
+
 ## License
 
 MIT
+

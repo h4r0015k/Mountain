@@ -29,12 +29,13 @@ import {
 const MATRIX_GLYPHS = '0123456789ABCDEF$#@%&*<>{}[]/?~!=+';
 
 const ROTATING_ONE_LINERS = [
-  'Only on your devices.',
-  'Zero corporate servers.',
-  'Your 12-word paper key.',
+  'Only on your hardware.',
+  'No servers. No telemetry.',
+  'Sealed with AES-256-GCM.',
+  'Offline by default.',
+  'Never on someone else\'s cloud.',
+  'Your keys. Your custody.',
   'Zero accounts to breach.',
-  'Encrypted at your edge.',
-  '100% private. Free forever.'
 ];
 
 interface MatrixScrambleProps {
@@ -159,12 +160,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             <div className="w-7 h-7 rounded-md bg-zinc-900 border border-zinc-700 flex items-center justify-center shrink-0">
               <MountainIcon className="w-4 h-4 text-zinc-200" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm tracking-tight text-white">Mountain</span>
-              <span className="hidden sm:inline-block text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60">
-                Free & Open Source
-              </span>
-            </div>
+            <span className="font-semibold text-sm tracking-tight text-white">Mountain</span>
           </div>
 
           {/* Desktop Navigation Links */}
@@ -187,26 +183,10 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             >
               Technical Breakdown
             </a>
-            <a
-              href="https://github.com/h4r0015k/Mountain"
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-1.5 rounded-md hover:text-white hover:bg-zinc-900/60 transition-colors flex items-center gap-1"
-            >
-              GitHub <ExternalLink className="w-3 h-3 text-zinc-500" />
-            </a>
           </nav>
 
           {/* Right Action Cluster */}
           <div className="flex items-center gap-2">
-            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-400 font-mono">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span>Runs on your device</span>
-            </div>
-
             <a
               href="https://github.com/h4r0015k/Mountain"
               target="_blank"
@@ -289,16 +269,11 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                 <Lock className="w-4 h-4 text-zinc-950" />
                 <span>Launch Password Vault</span>
               </button>
-              <div className="flex items-center justify-between text-xs text-zinc-400 font-mono px-1">
-                <div className="flex items-center gap-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <span>Runs on your device</span>
+              {hasExistingVault && (
+                <div className="flex items-center justify-end text-xs text-zinc-500 font-mono px-1">
+                  <span className="text-[11px]">{vaultItemCount} items saved</span>
                 </div>
-                <span className="text-zinc-500 text-[11px]">{hasExistingVault ? `${vaultItemCount} items` : 'Ready'}</span>
-              </div>
+              )}
             </div>
           </div>
         )}

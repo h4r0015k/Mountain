@@ -4,6 +4,10 @@ A free, local-first, open-source password manager. Encrypted client-side, option
 
 🚀 **Live Web App**: [https://h4r0015k.github.io/Mountain/](https://h4r0015k.github.io/Mountain/)
 
+<p align="center">
+  <img src="./demo.gif" alt="Mountain Password Manager Demo" width="100%" />
+</p>
+
 ---
 
 ## The Core Concept

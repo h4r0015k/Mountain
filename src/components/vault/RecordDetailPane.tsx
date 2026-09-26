@@ -12,6 +12,9 @@ import {
   ShieldCheck,
   Key,
   Lock,
+  CreditCard,
+  Terminal,
+  FileText,
 } from 'lucide-react';
 import { formatCardNumber, getCardBrand } from './VirtualCardPreview.js';
 import { TotpDisplay } from './TotpDisplay.js';

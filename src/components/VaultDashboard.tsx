@@ -14,7 +14,6 @@ import { saveVaultSnapshot } from '../storage/indexeddb.js';
 import { generateTOTP } from '../crypto/totp.js';
 import { createAuthCheckPayload } from '../backup/index.js';
 import { PasswordGeneratorModal } from './PasswordGeneratorModal.js';
-import { VaultBackupModal } from './VaultBackupModal.js';
 import { MountainIcon } from './ShowcaseDashboard.js';
 import {
   Lock,
@@ -35,10 +34,10 @@ import {
   CheckCircle2,
   Settings,
   Star,
-  Sparkles,
   ChevronRight,
+  FileUp,
+  ArrowLeft,
 } from 'lucide-react';
-import { CompanionPairingModal } from '../companion/CompanionPairingModal.js';
 import { CompanionBridgeHook } from '../companion/useCompanionBridge.js';
 import { useAutoLock } from '../hooks/useAutoLock.js';
 
@@ -47,12 +46,37 @@ import { extractDomain } from './vault/FaviconBadge.js';
 import { RecordItemIconBadge } from './vault/CategoryBadges.js';
 import { RecordDetailPane } from './vault/RecordDetailPane.js';
 import { RecordFormDrawer } from './vault/RecordFormDrawer.js';
-import { VaultSettingsModal } from './vault/VaultSettingsModal.js';
+import { VaultSettingsView, SettingsTab } from './vault/VaultSettingsView.js';
+import { VaultImportView } from './vault/VaultImportView.js';
 
 export { extractDomain };
 export type { DecryptedRecord } from '../models/vault.js';
 
+export function renderFormattedTitle(title: string) {
+  if (!title) return 'Untitled';
+  const trimmed = title.trim();
+  const domain = extractDomain(trimmed) || (trimmed.includes('.') && !trimmed.includes(' ') ? trimmed : null);
+
+  if (domain && domain.includes('.')) {
+    const parts = domain.split('.');
+    if (parts.length >= 3) {
+      // Subdomain (e.g. "dev-wealthpay") + Root domain (e.g. "junomoney.org")
+      const sub = parts.slice(0, -2).join('.');
+      const root = parts.slice(-2).join('.');
+      return (
+        <span className="truncate inline-flex items-baseline gap-0.5">
+          <span className="font-semibold text-zinc-100">{sub}</span>
+          <span className="text-zinc-500 font-normal text-[11px]">.{root}</span>
+        </span>
+      );
+    }
+  }
+
+  return <span className="font-semibold text-zinc-100 truncate">{title}</span>;
+}
+
 export type CategoryFilter = 'ALL' | 'FAVORITES' | VaultItemType;
+export type ActiveDashboardView = 'vault' | 'import' | 'settings';
 
 interface Props {
   snapshot: VaultSnapshot;
@@ -81,13 +105,17 @@ export const VaultDashboard: React.FC<Props> = ({
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  // Overlays & modals
+  // Top-level workspace views & overlays
+  const [activeView, setActiveView] = useState<ActiveDashboardView>('vault');
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('security');
   const [showAddDrawer, setShowAddDrawer] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
   const [generatorTarget, setGeneratorTarget] = useState<'password' | 'apiKey'>('password');
-  const [showBackupModal, setShowBackupModal] = useState(false);
-  const [showCompanionModal, setShowCompanionModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  const openSettings = (tab: SettingsTab = 'security') => {
+    setSettingsTab(tab);
+    setActiveView('settings');
+  };
 
   // Field states & feedback
   const [revealedFields, setRevealedFields] = useState<Record<string, boolean>>({});
@@ -489,17 +517,9 @@ export const VaultDashboard: React.FC<Props> = ({
         target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 
       if (e.key === 'Escape') {
-        // 1. Top-most floating modals
-        if (showSettingsModal) {
-          setShowSettingsModal(false);
-          return;
-        }
-        if (showCompanionModal) {
-          setShowCompanionModal(false);
-          return;
-        }
-        if (showBackupModal) {
-          setShowBackupModal(false);
+        // 1. Top-level workspace views (Settings / Import)
+        if (activeView === 'settings' || activeView === 'import') {
+          setActiveView('vault');
           return;
         }
         if (showGenerator) {
@@ -568,9 +588,7 @@ export const VaultDashboard: React.FC<Props> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
-    showSettingsModal,
-    showCompanionModal,
-    showBackupModal,
+    activeView,
     showGenerator,
     confirmDeleteId,
     showAddDrawer,
@@ -601,73 +619,149 @@ export const VaultDashboard: React.FC<Props> = ({
         <div className="w-full px-4 py-2.5 flex items-center justify-between">
           {/* Logo & Navigation */}
           <div className="flex items-center space-x-3 sm:space-x-4">
-            <button
-              onClick={onReturnToOverview}
-              className="flex items-center space-x-2.5 p-1 rounded-lg hover:bg-zinc-900 transition focus-ring group"
-              title="Return to Overview"
-            >
-              <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-100 p-1.5 group-hover:border-zinc-500 transition">
-                <MountainIcon className="w-full h-full" />
+            {activeView === 'import' ? (
+              <div className="flex items-center space-x-2.5">
+                <button
+                  onClick={() => setActiveView('vault')}
+                  className="flex items-center space-x-1.5 py-1 px-2.5 rounded-lg text-xs font-medium text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition focus-ring"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>Back to Vault</span>
+                </button>
+                <span className="text-zinc-700">/</span>
+                <span className="text-xs font-semibold text-zinc-200">Import</span>
               </div>
-              <span className="font-semibold text-sm tracking-tight text-zinc-100">Mountain</span>
-            </button>
+            ) : activeView === 'settings' ? (
+              <div className="flex items-center space-x-2.5">
+                <button
+                  onClick={() => setActiveView('vault')}
+                  className="flex items-center space-x-1.5 py-1 px-2.5 rounded-lg text-xs font-medium text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition focus-ring"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>Back to Vault</span>
+                </button>
+                <span className="text-zinc-700">/</span>
+                <span className="text-xs font-semibold text-zinc-200">Settings</span>
+              </div>
+            ) : (
+              <button
+                onClick={onReturnToOverview}
+                className="flex items-center space-x-2.5 p-1 rounded-lg hover:bg-zinc-900 transition focus-ring group"
+                title="Return to Overview"
+              >
+                <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-100 p-1.5 group-hover:border-zinc-500 transition">
+                  <MountainIcon className="w-full h-full" />
+                </div>
+                <span className="font-semibold text-sm tracking-tight text-zinc-100">Mountain</span>
+              </button>
+            )}
           </div>
 
           {/* Action Tools */}
           <div className="flex items-center space-x-2">
-            {/* Settings & Privacy Button */}
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-medium border border-zinc-800 transition focus-ring"
-              title="Vault Settings & Privacy"
-            >
-              <Settings className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="hidden sm:inline">Settings</span>
-            </button>
+            {activeView === 'import' ? (
+              <>
+                <button
+                  onClick={() => setActiveView('vault')}
+                  className="py-1.5 px-3 text-xs font-medium text-zinc-400 hover:text-zinc-200 transition rounded-lg hover:bg-zinc-900"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={onLock}
+                  className="flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100 rounded-lg text-xs font-medium border border-zinc-800 transition focus-ring"
+                  title="Lock Vault"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Lock</span>
+                </button>
+              </>
+            ) : activeView === 'settings' ? (
+              <>
+                <button
+                  onClick={() => setActiveView('vault')}
+                  className="py-1.5 px-3 text-xs font-medium text-zinc-400 hover:text-zinc-200 transition rounded-lg hover:bg-zinc-900"
+                >
+                  Done
+                </button>
+                <button
+                  onClick={onLock}
+                  className="flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100 rounded-lg text-xs font-medium border border-zinc-800 transition focus-ring"
+                  title="Lock Vault"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Lock</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setActiveView('import')}
+                  className="flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-medium border border-zinc-800 transition focus-ring"
+                  title="Import Passwords & Data"
+                >
+                  <FileUp className="w-3.5 h-3.5 text-zinc-400" />
+                  <span className="hidden sm:inline">Import</span>
+                </button>
 
-            {companion && (
-              <button
-                onClick={() => setShowCompanionModal(true)}
-                className={`flex items-center space-x-1.5 py-1.5 px-3 rounded-lg text-xs transition focus-ring ${
-                  companion.isPaired
-                    ? 'bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/40 font-semibold border border-emerald-600/40 shadow-sm'
-                    : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-medium border border-zinc-800'
-                }`}
-                title={companion.isPaired ? 'Companion: Paired & Active' : 'Pair Companion Extension'}
-              >
-                <Puzzle className={`w-3.5 h-3.5 ${companion.isPaired ? 'text-emerald-400' : 'text-zinc-400'}`} />
-                <span className="hidden sm:inline">Companion</span>
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    companion.isPaired ? 'bg-emerald-400' : 'bg-zinc-600'
-                  }`}
-                />
-              </button>
+                <button
+                  onClick={() => openSettings('security')}
+                  className="flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-medium border border-zinc-800 transition focus-ring"
+                  title="Vault Settings, Backup & Privacy"
+                >
+                  <Settings className="w-3.5 h-3.5 text-zinc-400" />
+                  <span className="hidden sm:inline">Settings</span>
+                  {companion?.isPaired && (
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-0.5"
+                      title="Companion Extension Connected"
+                    />
+                  )}
+                </button>
+
+                <button
+                  onClick={onLock}
+                  className="flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100 rounded-lg text-xs font-medium border border-zinc-800 transition focus-ring"
+                  title="Lock Vault"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Lock</span>
+                </button>
+              </>
             )}
-
-            <button
-              onClick={() => setShowBackupModal(true)}
-              className="flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-medium border border-zinc-800 transition focus-ring"
-              title="Backup Vault"
-            >
-              <DownloadCloud className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Backup</span>
-            </button>
-
-            <button
-              onClick={onLock}
-              className="flex items-center space-x-1.5 py-1.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100 rounded-lg text-xs font-medium border border-zinc-800 transition focus-ring"
-              title="Lock Vault"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Lock</span>
-            </button>
           </div>
         </div>
       </header>
 
-      {/* 3-Pane Desktop Workspace */}
-      <div className="flex-1 flex overflow-hidden w-full relative">
+      {/* Main Content: Full-Canvas Import View OR Full-Canvas Settings View OR 3-Pane Workspace */}
+      {activeView === 'import' ? (
+        <VaultImportView
+          snapshot={snapshot}
+          activeKey={activeKey}
+          existingItems={items}
+          onBack={() => setActiveView('vault')}
+          onImportComplete={async () => {
+            await onRefreshItems();
+          }}
+          onShowToast={showToast}
+        />
+      ) : activeView === 'settings' ? (
+        <VaultSettingsView
+          initialTab={settingsTab}
+          snapshot={snapshot}
+          timeoutMinutes={timeoutMinutes}
+          onTimeoutChange={setTimeoutMinutes}
+          allowFavicons={allowFavicons}
+          onToggleFavicons={setAllowFavicons}
+          companion={companion}
+          onBack={() => setActiveView('vault')}
+          onShowToast={showToast}
+          onBackupSuccess={() => showToast('Backup saved successfully')}
+        />
+      ) : (
+        <>
+        {/* 3-Pane Desktop Workspace */}
+        <div className="flex-1 flex overflow-hidden w-full relative">
         {/* PANE 1: Left Navigation Sidebar (Desktop) */}
         <aside className="hidden md:flex flex-col w-56 lg:w-64 border-r border-zinc-800 bg-zinc-950 shrink-0 select-none">
           {/* Categories navigation */}
@@ -825,34 +919,45 @@ export const VaultDashboard: React.FC<Props> = ({
                       setSelectedRecordId(item.id);
                       setMobileDrawerOpen(true);
                     }}
-                    className={`group relative p-2.5 rounded-xl transition duration-150 cursor-pointer flex items-center justify-between gap-2.5 border ${
+                    className={`group relative p-2.5 rounded-xl transition duration-150 cursor-pointer flex items-center justify-between gap-3 border ${
                       isSelected
                         ? 'bg-zinc-800/90 border-zinc-700/80 shadow-xs text-white before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r before:bg-emerald-400'
-                        : 'hover:bg-zinc-900/70 border-transparent text-zinc-300'
+                        : 'border-zinc-900 hover:border-zinc-800 hover:bg-zinc-900/60 text-zinc-300'
                     }`}
                   >
-                    <div className="flex items-center space-x-2.5 min-w-0 flex-1 pl-1">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1 pl-0.5">
                       <RecordItemIconBadge
                         type={item.type}
-                        url={item.type === 'LOGIN' ? secret?.url : undefined}
+                        url={item.type === 'LOGIN' ? secret?.url || item.title : undefined}
                         title={item.title}
                         size="sm"
                         allowExternalFetch={allowFavicons}
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-semibold truncate text-zinc-100">
-                            {item.title}
-                          </span>
+                          {renderFormattedTitle(item.title)}
                         </div>
-                        <div className="text-[11px] text-zinc-400 truncate mt-0.5">
-                          {item.type === 'LOGIN' &&
-                            (secret?.username || (secret?.url ? extractDomain(secret.url) : 'No username'))}
-                          {item.type === 'CARD' &&
-                            (secret?.cardNumber ? `•••• ${secret.cardNumber.slice(-4)}` : 'Card')}
-                          {item.type === 'API_KEY' && (secret?.serviceName || 'API Key')}
-                          {item.type === 'SECURE_NOTE' &&
-                            (secret?.content ? 'Encrypted text note' : 'Empty note')}
+                        <div className="text-xs text-zinc-300 truncate mt-1 flex items-center gap-1.5">
+                          {item.type === 'LOGIN' && (
+                            <span className="truncate font-mono text-[11.5px] text-zinc-300">
+                              {secret?.username || (secret?.url ? extractDomain(secret.url) : 'No username')}
+                            </span>
+                          )}
+                          {item.type === 'CARD' && (
+                            <span className="truncate font-mono text-xs text-zinc-300">
+                              {secret?.cardNumber ? `•••• ${secret.cardNumber.slice(-4)}` : 'Card'}
+                            </span>
+                          )}
+                          {item.type === 'API_KEY' && (
+                            <span className="truncate text-zinc-300">
+                              {secret?.serviceName || 'API Key'}
+                            </span>
+                          )}
+                          {item.type === 'SECURE_NOTE' && (
+                            <span className="truncate text-zinc-400 italic">
+                              {secret?.content ? 'Encrypted note' : 'Empty note'}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1126,6 +1231,8 @@ export const VaultDashboard: React.FC<Props> = ({
           }}
         />
       </div>
+        </>
+      )}
 
       {/* Password Generator Modal */}
       {showGenerator && (
@@ -1154,42 +1261,6 @@ export const VaultDashboard: React.FC<Props> = ({
             }
             setShowGenerator(false);
           }}
-        />
-      )}
-
-      {/* Vault Backup Modal */}
-      {showBackupModal && (
-        <VaultBackupModal
-          isOpen={showBackupModal}
-          onClose={() => setShowBackupModal(false)}
-          snapshot={snapshot}
-          onBackupSuccess={() => showToast('Backup saved successfully')}
-        />
-      )}
-
-      {/* Companion Extension Pairing Modal */}
-      {showCompanionModal && companion && (
-        <CompanionPairingModal
-          isOpen={showCompanionModal}
-          onClose={() => setShowCompanionModal(false)}
-          pairingCode={companion.pairingCode}
-          isPaired={companion.isPaired}
-          onGenerateNewCode={companion.generateNewPairingCode}
-          onUnpair={companion.unpair}
-        />
-      )}
-
-      {/* Vault Settings & Privacy Modal */}
-      {showSettingsModal && (
-        <VaultSettingsModal
-          isOpen={showSettingsModal}
-          onClose={() => setShowSettingsModal(false)}
-          timeoutMinutes={timeoutMinutes}
-          onTimeoutChange={setTimeoutMinutes}
-          allowFavicons={allowFavicons}
-          onToggleFavicons={setAllowFavicons}
-          snapshot={snapshot}
-          onShowToast={showToast}
         />
       )}
 

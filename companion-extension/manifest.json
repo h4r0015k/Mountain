@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mountain Vault Companion",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6QJzKGKoKRuPPrqgBgxeMj+GJUY2lewdxr7ZtfSldBPqpufADCb2uRHcenKrb7wBzUEmRaEqq5DE0Y/FbbSbbj3tSlfoxol30Sxtioc5EG6uHzbG+U1DEgm53tPlBi7ohuCBafkduSl0eE0+1Z1SltoqGjS2r3DWWNqMqWKVi2niwczdOKU98T6VvSSfPeQ9PnWwA53i1fe5NHsz5gqktvviXtMmySFkSNnb3XykqceQfz8EQE4CkhsSYglQOiuTPu7rUcXQLlbx5bIPDY/8D3NgcJSLyk8Hkuz5tyFo0jeSMXbsANVORRBQtw7I7zd9f0XnE3e5gBi8hpDmT9uItwIDAQAB",
   "externally_connectable": {
     "matches": [

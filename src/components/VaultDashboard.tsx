@@ -802,7 +802,7 @@ export const VaultDashboard: React.FC<Props> = ({
           {/* Vault Footer Info */}
           <div className="mt-auto p-3">
             <div className="p-2.5 rounded-xl bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between text-xs text-zinc-400">
-              <span className="text-[11px] font-mono text-zinc-400">v1.0.0</span>
+              <span className="text-[11px] font-mono text-zinc-400">v1.1.0</span>
               <span className="text-[11px] font-mono text-zinc-400">Auto-lock {timeoutMinutes}m</span>
             </div>
           </div>

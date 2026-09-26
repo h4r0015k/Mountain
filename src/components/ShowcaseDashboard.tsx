@@ -525,7 +525,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
 
             <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
               <a
-                href="https://github.com/h4r0015k/Mountain/releases/download/v1.0.0/mountain-companion-extension-v1.0.0.zip"
+                href="https://github.com/h4r0015k/Mountain/releases/download/v1.1.0/mountain-companion-extension-v1.1.0.zip"
                 target="_blank"
                 rel="noreferrer"
                 className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-medium transition-colors"
@@ -791,7 +791,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
           </div>
 
           <div className="pt-6 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-zinc-500 font-mono text-[11px]">
-            <div>Mountain v1.0.0 • Free & Open Source under ISC License</div>
+            <div>Mountain v1.1.0 • Free & Open Source under ISC License</div>
             <div>PBKDF2-HMAC-SHA256 • AES-256-GCM • BIP-39</div>
           </div>
         </div>

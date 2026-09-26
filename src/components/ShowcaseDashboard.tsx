@@ -802,45 +802,91 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Developer Install / Pair Bar */}
-          <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="text-sm font-semibold text-white flex items-center gap-2">
-                <span>Load Extension in 3 Steps</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60">
-                  Chrome / Brave / Edge
-                </span>
+          {/* Developer Install / Pair Guide */}
+          <div className="rounded-2xl bg-zinc-950/70 border border-zinc-800/80 shadow-2xl backdrop-blur-md overflow-hidden">
+            {/* Guide Header & Actions */}
+            <div className="p-5 sm:p-6 border-b border-zinc-800/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-zinc-900/30">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-md bg-zinc-800 border border-zinc-700/80 flex items-center justify-center text-zinc-300">
+                    <Puzzle className="w-3.5 h-3.5" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-white tracking-tight">
+                    Load the Extension in 3 Steps
+                  </h3>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700/60">
+                    Chrome • Brave • Edge
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed max-w-xl">
+                  Mountain operates as an unpacked extension in Developer Mode. No Web Store tracking, zero remote code execution.
+                </p>
               </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-400">
-                <span>1. Download & unzip archive</span>
-                <span>•</span>
-                <span>2. Turn on Developer Mode in <code className="text-zinc-300 font-mono bg-zinc-800 px-1 py-0.2 rounded text-[11px]">chrome://extensions</code></span>
-                <span>•</span>
-                <span>3. Pair with Mountain Settings</span>
+
+              <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+                <a
+                  href="https://github.com/h4r0015k/Mountain/releases/download/v1.1.0/mountain-companion-extension-v1.1.0.zip"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition-all active:scale-[0.98] shadow-sm"
+                  title="Download companion extension zip archive"
+                >
+                  <Download className="w-3.5 h-3.5 text-zinc-900" />
+                  <span>Download Extension .zip</span>
+                </a>
+
+                <a
+                  href="https://github.com/h4r0015k/Mountain/tree/main/companion-extension"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white font-medium text-xs transition-colors"
+                >
+                  <span>Source</span>
+                  <ExternalLink className="w-3 h-3 text-zinc-500" />
+                </a>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0 w-full md:w-auto">
-              <a
-                href="https://github.com/h4r0015k/Mountain/releases/download/v1.1.0/mountain-companion-extension-v1.1.0.zip"
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-medium transition-colors"
-                title="Download companion extension zip archive"
-              >
-                <Download className="w-3.5 h-3.5 text-zinc-300" />
-                <span>Download .zip</span>
-              </a>
+            {/* 3 Step Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-zinc-800/80">
+              {/* Step 1 */}
+              <div className="p-4 sm:p-5 space-y-1.5 hover:bg-zinc-900/30 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-700 text-[11px] font-mono font-semibold text-zinc-300 flex items-center justify-center">
+                    1
+                  </span>
+                  <span className="text-xs font-semibold text-zinc-200">Unpack the Archive</span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed pl-7">
+                  Download the <code className="text-zinc-300 font-mono text-[11px]">mountain-companion.zip</code> file and extract it to a persistent local folder.
+                </p>
+              </div>
 
-              <a
-                href="https://github.com/h4r0015k/Mountain/tree/main/companion-extension"
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 md:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs transition-colors"
-              >
-                <span>Extension Source</span>
-                <ExternalLink className="w-3.5 h-3.5 text-zinc-900" />
-              </a>
+              {/* Step 2 */}
+              <div className="p-4 sm:p-5 space-y-1.5 hover:bg-zinc-900/30 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-700 text-[11px] font-mono font-semibold text-zinc-300 flex items-center justify-center">
+                    2
+                  </span>
+                  <span className="text-xs font-semibold text-zinc-200">Load in Browser</span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed pl-7">
+                  Open <code className="text-zinc-300 font-mono bg-zinc-800/80 px-1 py-0.2 rounded text-[11px]">chrome://extensions</code>, turn on <strong>Developer mode</strong>, and click <strong>Load unpacked</strong>.
+                </p>
+              </div>
+
+              {/* Step 3 */}
+              <div className="p-4 sm:p-5 space-y-1.5 hover:bg-zinc-900/30 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-700 text-[11px] font-mono font-semibold text-zinc-300 flex items-center justify-center">
+                    3
+                  </span>
+                  <span className="text-xs font-semibold text-zinc-200">Pair with Mountain</span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed pl-7">
+                  In Mountain, navigate to <strong>Settings &rarr; Companion Extension</strong> and click <strong>Pair</strong> to establish a local cryptographic session.
+                </p>
+              </div>
             </div>
           </div>
         </div>

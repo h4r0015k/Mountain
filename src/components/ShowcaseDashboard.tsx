@@ -27,6 +27,7 @@ import {
   FileSpreadsheet,
   Repeat,
   Globe,
+  Check,
 } from 'lucide-react';
 
 const MATRIX_GLYPHS = '0123456789ABCDEF$#@%&*<>{}[]/?~!=+';
@@ -144,6 +145,34 @@ export const ShowcaseDashboard: React.FC<Props> = ({
   const [phraseIndex, setPhraseIndex] = useState(0);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Companion Extension Interactive Demo State
+  const [companionDemoTab, setCompanionDemoTab] = useState<'cycle' | 'capture' | 'generate'>('cycle');
+  const [cycleIndex, setCycleIndex] = useState(0);
+  const [capturedSaved, setCapturedSaved] = useState(false);
+  const [demoPassword, setDemoPassword] = useState('x9#mK2$pQ8*vL1@zY4!b');
+  const [hasCopiedGen, setHasCopiedGen] = useState(false);
+
+  const DEMO_LOGINS = [
+    { username: 'nikhil.billing@junomoney.org', role: 'Production Billing', label: '1 of 3' },
+    { username: 'nikhil.admin@junomoney.org', role: 'Staging Root Admin', label: '2 of 3' },
+    { username: 'nikhil.audit@junomoney.org', role: 'Security Auditor', label: '3 of 3' },
+  ];
+
+  const handleNextCycle = () => {
+    setCycleIndex((prev) => (prev + 1) % DEMO_LOGINS.length);
+  };
+
+  const handleGenerateNew = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*';
+    let res = '';
+    for (let i = 0; i < 20; i++) {
+      res += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setDemoPassword(res);
+    setHasCopiedGen(true);
+    setTimeout(() => setHasCopiedGen(false), 1800);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -382,190 +411,390 @@ export const ShowcaseDashboard: React.FC<Props> = ({
 
       {/* Companion Extension Showcase Section (Second Section) */}
       <section id="companion-extension" className="py-20 px-4 sm:px-6 border-b border-zinc-800/80 bg-zinc-950/40">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           {/* Section Header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-2">
                 <Puzzle className="w-3.5 h-3.5 text-zinc-400" />
-                <span>Browser Extension (Unpacked)</span>
+                <span>Browser Companion (MV3)</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                Autofill and auto-save logins across the web
+                Seamless Autofill. Zero Stored Passwords.
               </h2>
-              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-xl">
-                Fill existing credentials with 1-click or hotkeys, create random passwords, and auto-save new logins on submission. It talks directly to your unlocked Mountain tab and never stores passwords in the extension.
+              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-2xl leading-relaxed">
+                A stateless Manifest V3 companion that talks directly to your unlocked Mountain tab. Autofill on demand, cycle through multiple accounts, and capture new logins on submission—without persistent secrets ever touching extension storage.
               </p>
             </div>
 
             <div className="flex sm:flex-col items-start sm:items-end gap-1.5 text-xs font-mono text-zinc-500 shrink-0">
-              <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+              <span className="px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-300 text-[11px]">
                 Manifest V3
               </span>
-              <span>Load unpacked in Developer mode</span>
+              <span className="text-[11px]">Direct Tab Handshake</span>
             </div>
           </div>
 
-          {/* Features & Visual Preview */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center mb-8">
-            <div className="lg:col-span-7 space-y-3">
-              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">Auto-save logins on form submission</h3>
-                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                      Signing in or registering somewhere new? Mountain automatically detects submitted credentials and presents a 1-click prompt to encrypt and persist them directly into your vault.
-                    </p>
-                  </div>
+          {/* Interactive Simulation Window */}
+          <div className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-900/40 shadow-2xl overflow-hidden backdrop-blur-xs">
+            {/* Interactive Mode Selector Header */}
+            <div className="px-4 py-3 bg-zinc-950/80 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 mr-2">
+                  <span className="w-3 h-3 rounded-full bg-rose-500/20 border border-rose-500/40 inline-block" />
+                  <span className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/40 inline-block" />
+                  <span className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/40 inline-block" />
+                </div>
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-400">
+                  <Lock className="w-3 h-3 text-emerald-400" />
+                  <span>https://dev-wealthpay.junomoney.org/login</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60">
+                    Host Isolated
+                  </span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
-                    <Repeat className="w-4 h-4 text-zinc-200" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">Cmd+Shift+L with Multi-Account Cycling</h3>
-                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                      Right-click or press <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px] border border-zinc-700">Cmd+Shift+L</kbd> (<kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px] border border-zinc-700">Ctrl+Shift+L</kbd> on Windows/Linux) to fill credentials. Have multiple accounts for the same site? Successive keypresses automatically cycle through each account with an on-screen count indicator.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
-                    <Globe className="w-4 h-4 text-zinc-200" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">Strict Subdomain Isolation</h3>
-                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                      Authoritative host matching prevents sibling subdomains (such as <code className="text-zinc-300 font-mono">dev-wealthpay</code> vs <code className="text-zinc-300 font-mono">dev-admin</code>) from cross-pollinating credentials, ensuring staging, testing, and production secrets stay strictly isolated.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
-                    <Sparkles className="w-4 h-4 text-zinc-200" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">Make strong passwords on the fly</h3>
-                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                      Signing up somewhere new? Right-click the password box to create a random 20-character password. It fills the field and copies it to your clipboard.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
-                    <Zap className="w-4 h-4 text-zinc-200" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">Works with modern reactive pages</h3>
-                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                      Websites like Instagram, Google, and GitHub use reactive forms that often ignore basic autofill. Mountain triggers native DOM input events and buffers submissions before pages redirect.
-                    </p>
-                  </div>
-                </div>
+              {/* Mode Tabs */}
+              <div className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-lg border border-zinc-800 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setCompanionDemoTab('cycle')}
+                  className={`px-3 py-1 rounded-md transition-all font-medium flex items-center gap-1.5 ${
+                    companionDemoTab === 'cycle'
+                      ? 'bg-zinc-800 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <Repeat className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>⌘⇧L Cycling</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCompanionDemoTab('capture')}
+                  className={`px-3 py-1 rounded-md transition-all font-medium flex items-center gap-1.5 ${
+                    companionDemoTab === 'capture'
+                      ? 'bg-zinc-800 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Auto-Capture</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCompanionDemoTab('generate')}
+                  className={`px-3 py-1 rounded-md transition-all font-medium flex items-center gap-1.5 ${
+                    companionDemoTab === 'generate'
+                      ? 'bg-zinc-800 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Generator</span>
+                </button>
               </div>
             </div>
 
-            {/* Visual Preview */}
-            <div className="lg:col-span-5">
-              <div className="p-4 rounded-xl bg-zinc-900/70 border border-zinc-800 shadow-xl space-y-3">
-                {/* Floating Save Prompt Mock */}
-                <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-700/80 shadow-2xl">
-                  <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80 mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-4 h-4 rounded bg-zinc-900 border border-zinc-700 flex items-center justify-center">
-                        <MountainIcon className="w-2.5 h-2.5 text-emerald-400" />
+            {/* Viewport Content */}
+            <div className="p-6 sm:p-8 relative min-h-[320px] flex items-center justify-center bg-radial from-zinc-900/30 to-zinc-950/80">
+              {/* TAB 1: Multi-Account Cycling */}
+              {companionDemoTab === 'cycle' && (
+                <div className="w-full max-w-lg space-y-4 animate-fade-in">
+                  {/* Toast Simulation */}
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/90 border border-emerald-500/30 shadow-lg text-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-6 h-6 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                        <Repeat className="w-3.5 h-3.5 text-emerald-400" />
                       </div>
-                      <span className="text-[11px] font-semibold text-white">Mountain</span>
-                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">New</span>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-zinc-100 flex items-center gap-2">
+                          <span>Autofilled credential</span>
+                          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">
+                            {DEMO_LOGINS[cycleIndex].label}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-zinc-400 truncate">
+                          {DEMO_LOGINS[cycleIndex].role}
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-zinc-500 text-xs">✕</span>
+
+                    <button
+                      type="button"
+                      onClick={handleNextCycle}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-mono flex items-center gap-1.5 transition active:scale-95 shrink-0"
+                    >
+                      <kbd className="px-1 py-0.2 rounded bg-zinc-900 border border-zinc-700 text-[10px] text-zinc-300">
+                        ⌘⇧L
+                      </kbd>
+                      <span>Cycle Next</span>
+                    </button>
                   </div>
-                  <div className="text-[11px] text-zinc-300 mb-2.5">
-                    Save password for <strong className="text-white">instagram.com</strong> to Mountain?
+
+                  {/* Form Mockup */}
+                  <div className="p-5 rounded-xl bg-zinc-950 border border-zinc-800/80 shadow-inner space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80 text-xs">
+                      <span className="font-medium text-zinc-300">Sign In to WealthPay Portal</span>
+                      <span className="font-mono text-[11px] text-zinc-500">dev-wealthpay.junomoney.org</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-mono text-zinc-400">Username / Email</label>
+                      <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-700 text-xs font-mono text-zinc-100 flex items-center justify-between">
+                        <span>{DEMO_LOGINS[cycleIndex].username}</span>
+                        <span className="text-[10px] font-sans px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400">
+                          auto-filled
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-mono text-zinc-400">Password</label>
+                      <div className="p-2.5 rounded-lg bg-zinc-900 border border-emerald-500/50 text-xs font-mono text-emerald-400 flex items-center justify-between">
+                        <span>••••••••••••••••••••</span>
+                        <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-sans">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>account {DEMO_LOGINS[cycleIndex].label}</span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1 py-1.5 px-2.5 rounded-lg bg-zinc-100 text-zinc-950 font-semibold text-[11px] text-center shadow-sm">
-                      Save to Mountain
-                    </div>
-                    <div className="py-1.5 px-3 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 text-[11px] text-center">
-                      Never
-                    </div>
+
+                  <div className="text-center text-[11px] font-mono text-zinc-500">
+                    Host isolation active: credentials for <code className="text-zinc-400">dev-admin.junomoney.org</code> are isolated and will not match here.
                   </div>
                 </div>
+              )}
 
-                {/* Browser Tab Mock */}
-                <div className="pt-2 border-t border-zinc-800/60">
-                  <div className="flex items-center gap-2 pb-2.5 mb-2.5 border-b border-zinc-800 text-[11px] font-mono text-zinc-400">
-                    <div className="flex gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
-                    </div>
-                    <div className="flex-1 text-center bg-zinc-950 py-0.5 px-3 rounded text-[10px] text-zinc-500 truncate border border-zinc-800/60">
-                      instagram.com/accounts/login
-                    </div>
-                  </div>
-
-                  {/* Form Simulation */}
-                  <div className="space-y-2 my-2">
-                    <div className="p-2 rounded bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 font-mono flex items-center justify-between">
-                      <span>nikhil@example.com</span>
-                      <span className="text-[10px] text-zinc-500">username</span>
-                    </div>
-                    <div className="p-2 rounded bg-zinc-950 border border-emerald-500/40 text-xs text-emerald-400 font-mono flex items-center justify-between">
-                      <span>••••••••••••••••</span>
-                      <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <span>autofilled (1 of 2)</span>
+              {/* TAB 2: Form Auto-Capture */}
+              {companionDemoTab === 'capture' && (
+                <div className="w-full max-w-lg space-y-4 animate-fade-in">
+                  <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-700/80 shadow-2xl relative overflow-hidden">
+                    <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded bg-zinc-900 border border-zinc-700 flex items-center justify-center">
+                          <MountainIcon className="w-3 h-3 text-emerald-400" />
+                        </div>
+                        <span className="text-xs font-semibold text-white">Save Credential to Mountain?</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Zero-Knowledge Seal
                       </span>
                     </div>
+
+                    {!capturedSaved ? (
+                      <>
+                        <div className="text-xs text-zinc-300 space-y-1.5 mb-4">
+                          <p>
+                            New credentials submitted on <strong className="text-white">dev-wealthpay.junomoney.org</strong>:
+                          </p>
+                          <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 font-mono text-xs text-zinc-300 flex items-center justify-between">
+                            <span>alex.devops@junomoney.org</span>
+                            <span className="text-zinc-500 text-[11px]">••••••••••••</span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setCapturedSaved(true)}
+                            className="flex-1 py-2 px-3 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs text-center transition active:scale-98 shadow-sm flex items-center justify-center gap-1.5"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5 text-zinc-950" />
+                            <span>Save to Local Vault</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="py-2 px-4 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 text-xs text-center transition"
+                          >
+                            Never
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="py-4 text-center space-y-3">
+                        <div className="inline-flex p-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                          <Check className="w-5 h-5" />
+                        </div>
+                        <div className="text-xs font-semibold text-white">
+                          Encrypted & Saved to Mountain Vault
+                        </div>
+                        <div className="text-[11px] text-zinc-400">
+                          Ciphertext sealed with authenticated AES-256-GCM before database write.
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setCapturedSaved(false)}
+                          className="text-xs text-emerald-400 hover:text-emerald-300 underline font-mono"
+                        >
+                          Reset Demo
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-center text-[11px] font-mono text-zinc-500">
+                    Captures inputs right at form submission before the page redirects or clears state.
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* TAB 3: Instant Password Generator */}
+              {companionDemoTab === 'generate' && (
+                <div className="w-full max-w-lg space-y-4 animate-fade-in">
+                  <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 shadow-2xl space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-800 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-400" />
+                        <span className="font-semibold text-white">Context Menu Password Generator</span>
+                      </div>
+                      <span className="font-mono text-[10px] text-zinc-500">20 Characters • CSPRNG</span>
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-700/80 space-y-2">
+                      <div className="text-[11px] text-zinc-400">Right-click on any password input:</div>
+                      <div className="flex items-center justify-between p-2 rounded bg-zinc-950 border border-zinc-800 font-mono text-xs">
+                        <span className="text-amber-300 tracking-wider truncate select-all">{demoPassword}</span>
+                        <span className="text-[10px] text-zinc-500 shrink-0 ml-2">High Entropy</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleGenerateNew}
+                        className="flex-1 py-2 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-medium transition active:scale-98 flex items-center justify-center gap-1.5"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-zinc-300" />
+                        <span>{hasCopiedGen ? 'Copied & Replaced!' : 'Generate Another Secret'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-center text-[11px] font-mono text-zinc-500">
+                    Simultaneously injects the generated secret into the form and writes it to your clipboard.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Unpacked Install / Download Box */}
-          <div className="p-5 rounded-xl bg-zinc-900/50 border border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="space-y-0.5 text-center sm:text-left">
-              <div className="text-sm font-semibold text-white">How to load in Chrome, Brave, or Edge</div>
-              <p className="text-xs text-zinc-400">
-                Go to <code className="text-zinc-300 font-mono bg-zinc-800 px-1 py-0.5 rounded text-[11px]">chrome://extensions</code>, turn on Developer mode, and click <strong>Load unpacked</strong>.
+          {/* Feature Matrix Grid (Balanced 3-Column Layout) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+            {/* Card 1 */}
+            <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                  <Repeat className="w-4 h-4" />
+                </div>
+                <div className="text-xs font-semibold text-white">Cmd+Shift+L Cycling</div>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Multiple accounts for one site? Successive keypresses automatically cycle through every matching login with a live count indicator.
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+            {/* Card 2 */}
+            <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400">
+                  <Globe className="w-4 h-4" />
+                </div>
+                <div className="text-xs font-semibold text-white">Strict Subdomain Isolation</div>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Authoritative host matching strictly isolates sibling subdomains (<code className="text-zinc-300 font-mono text-[11px]">dev-admin</code> vs <code className="text-zinc-300 font-mono text-[11px]">dev-wealthpay</code>), eliminating cross-environment leakage.
+              </p>
+            </div>
+
+            {/* Card 3 */}
+            <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div className="text-xs font-semibold text-white">Zero Extension Storage</div>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                The extension stores zero passwords, seeds, or keys. Credentials stay inside your active tab and are delivered on demand over volatile memory.
+              </p>
+            </div>
+
+            {/* Card 4 */}
+            <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div className="text-xs font-semibold text-white">Native Event Dispatch</div>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Dispatches trusted DOM <code className="text-zinc-300 font-mono text-[11px]">input</code> and <code className="text-zinc-300 font-mono text-[11px]">change</code> events so modern reactive apps (React, Vue, Angular) immediately recognize filled values.
+              </p>
+            </div>
+
+            {/* Card 5 */}
+            <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-400">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <div className="text-xs font-semibold text-white">Submit Auto-Capture</div>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Detects registrations and password changes when forms submit, buffering fields and presenting a 1-click confirmation before page navigation.
+              </p>
+            </div>
+
+            {/* Card 6 */}
+            <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 rounded-lg bg-violet-500/10 border border-violet-500/30 text-violet-400">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div className="text-xs font-semibold text-white">Context Menu Generator</div>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Right-click any password box to generate a high-entropy 20-character secret sampled from hardware CSPRNG entropy, instantly staging both input and clipboard.
+              </p>
+            </div>
+          </div>
+
+          {/* Developer Install / Pair Bar */}
+          <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="text-sm font-semibold text-white flex items-center gap-2">
+                <span>Load Extension in 3 Steps</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60">
+                  Chrome / Brave / Edge
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-400">
+                <span>1. Download & unzip archive</span>
+                <span>•</span>
+                <span>2. Turn on Developer Mode in <code className="text-zinc-300 font-mono bg-zinc-800 px-1 py-0.2 rounded text-[11px]">chrome://extensions</code></span>
+                <span>•</span>
+                <span>3. Pair with Mountain Settings</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0 w-full md:w-auto">
               <a
                 href="https://github.com/h4r0015k/Mountain/releases/download/v1.1.0/mountain-companion-extension-v1.1.0.zip"
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-medium transition-colors"
+                className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-medium transition-colors"
                 title="Download companion extension zip archive"
               >
                 <Download className="w-3.5 h-3.5 text-zinc-300" />
-                <span>Download Extension .zip</span>
+                <span>Download .zip</span>
               </a>
 
               <a
                 href="https://github.com/h4r0015k/Mountain/tree/main/companion-extension"
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs transition-colors"
+                className="flex-1 md:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs transition-colors"
               >
                 <span>Extension Source</span>
                 <ExternalLink className="w-3.5 h-3.5 text-zinc-900" />

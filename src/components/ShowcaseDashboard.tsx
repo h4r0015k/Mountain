@@ -525,14 +525,14 @@ export const ShowcaseDashboard: React.FC<Props> = ({
 
             <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
               <a
-                href="https://github.com/h4r0015k/Mountain/archive/refs/heads/main.zip"
+                href="https://github.com/h4r0015k/Mountain/releases/download/v1.0.0/mountain-companion-extension-v1.0.0.zip"
                 target="_blank"
                 rel="noreferrer"
                 className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-medium transition-colors"
-                title="Download repository zip archive"
+                title="Download companion extension zip archive"
               >
                 <Download className="w-3.5 h-3.5 text-zinc-300" />
-                <span>Download .zip</span>
+                <span>Download Extension .zip</span>
               </a>
 
               <a

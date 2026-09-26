@@ -47,7 +47,7 @@ export function matchesDomainOrTitle(itemUrl: string, itemTitle: string, targetD
 
   // If itemUrl has a domain specified, domain matching is strictly authoritative
   if (cleanItemDomain) {
-    // 1. Exact match (e.g. dev-admin.junomoney.org === dev-admin.junomoney.org)
+    // 1. Exact match (e.g. dashboard.stripe.com === dashboard.stripe.com)
     if (cleanItemDomain === cleanTarget) return true;
 
     // 2. Subdomain hierarchy match:
@@ -61,7 +61,7 @@ export function matchesDomainOrTitle(itemUrl: string, itemTitle: string, targetD
     }
 
     // Explicit domain set on record does not match target.
-    // Strictly isolate sibling subdomains (e.g. dev-wealthpay.junomoney.org vs dev-admin.junomoney.org)
+    // Strictly isolate sibling subdomains (e.g. billing.stripe.com vs dashboard.stripe.com)
     // and do NOT fall back to fuzzy title matching.
     return false;
   }

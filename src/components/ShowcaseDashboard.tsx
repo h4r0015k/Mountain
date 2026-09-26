@@ -154,9 +154,9 @@ export const ShowcaseDashboard: React.FC<Props> = ({
   const [hasCopiedGen, setHasCopiedGen] = useState(false);
 
   const DEMO_LOGINS = [
-    { username: 'nikhil.billing@junomoney.org', role: 'Production Billing', label: '1 of 3' },
-    { username: 'nikhil.admin@junomoney.org', role: 'Staging Root Admin', label: '2 of 3' },
-    { username: 'nikhil.audit@junomoney.org', role: 'Security Auditor', label: '3 of 3' },
+    { username: 'alex.developer@company.com', role: 'Production Dashboard', label: '1 of 3' },
+    { username: 'alex.admin@company.com', role: 'Staging Administrator', label: '2 of 3' },
+    { username: 'alex.audit@company.com', role: 'Security & Compliance', label: '3 of 3' },
   ];
 
   const handleNextCycle = () => {
@@ -374,36 +374,78 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             • Free forever • No subscriptions • Zero tracking • No account creation needed
           </div>
 
-          {/* Product Pillars Metric Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-14 animate-fade-in-delayed-3">
-            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Privacy</div>
-              <div className="text-base font-semibold text-zinc-100 mt-1">100% Local</div>
-              <div className="text-[11px] text-zinc-500 mt-0.5">Lives on your device</div>
-            </div>
+          {/* Product Pillars Dock */}
+          <div className="mt-14 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 shadow-2xl backdrop-blur-md overflow-hidden animate-fade-in-delayed-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-y sm:divide-y-0 divide-zinc-800/70">
+              {/* Pillar 1: Privacy */}
+              <div className="group p-4 sm:p-5 hover:bg-zinc-900/40 transition-colors duration-150 flex flex-col justify-between border-r border-zinc-800/70">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform duration-150">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[10px] font-mono tracking-wider text-zinc-400 uppercase font-medium">Privacy</span>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white tracking-tight">100% Local</div>
+                  <div className="text-[11px] text-zinc-400 mt-0.5 leading-normal">Zero server storage</div>
+                </div>
+              </div>
 
-            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Accounts</div>
-              <div className="text-base font-semibold text-zinc-100 mt-1">Zero Signups</div>
-              <div className="text-[11px] text-zinc-500 mt-0.5">No email or login needed</div>
-            </div>
+              {/* Pillar 2: Accounts */}
+              <div className="group p-4 sm:p-5 hover:bg-zinc-900/40 transition-colors duration-150 flex flex-col justify-between border-r border-zinc-800/70">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-md bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 group-hover:scale-105 transition-transform duration-150">
+                    <KeyRound className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[10px] font-mono tracking-wider text-zinc-400 uppercase font-medium">Custody</span>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white tracking-tight">Zero Signups</div>
+                  <div className="text-[11px] text-zinc-400 mt-0.5 leading-normal">No email or login needed</div>
+                </div>
+              </div>
 
-            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Recovery</div>
-              <div className="text-base font-semibold text-zinc-100 mt-1">12-Word Key</div>
-              <div className="text-[11px] text-zinc-500 mt-0.5">Paper backup you control</div>
-            </div>
+              {/* Pillar 3: Recovery */}
+              <div className="group p-4 sm:p-5 hover:bg-zinc-900/40 transition-colors duration-150 flex flex-col justify-between border-r border-zinc-800/70">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform duration-150">
+                    <Layers className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[10px] font-mono tracking-wider text-zinc-400 uppercase font-medium">Recovery</span>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white tracking-tight">12-Word Key</div>
+                  <div className="text-[11px] text-zinc-400 mt-0.5 leading-normal">BIP-39 paper master key</div>
+                </div>
+              </div>
 
-            <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Cloud Sync</div>
-              <div className="text-base font-semibold text-zinc-100 mt-1">Personal Drive</div>
-              <div className="text-[11px] text-zinc-500 mt-0.5">Your private Google Drive</div>
-            </div>
+              {/* Pillar 4: Cloud Sync */}
+              <div className="group p-4 sm:p-5 hover:bg-zinc-900/40 transition-colors duration-150 flex flex-col justify-between border-r border-zinc-800/70">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-md bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 group-hover:scale-105 transition-transform duration-150">
+                    <HardDrive className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[10px] font-mono tracking-wider text-zinc-400 uppercase font-medium">Backup</span>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white tracking-tight">Personal Drive</div>
+                  <div className="text-[11px] text-zinc-400 mt-0.5 leading-normal">Encrypted Google Drive</div>
+                </div>
+              </div>
 
-            <div className="col-span-2 sm:col-span-1 p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Migration</div>
-              <div className="text-base font-semibold text-zinc-100 mt-1">1-Click Import</div>
-              <div className="text-[11px] text-zinc-500 mt-0.5">Bitwarden, 1Password & CSV</div>
+              {/* Pillar 5: Migration */}
+              <div className="group p-4 sm:p-5 hover:bg-zinc-900/40 transition-colors duration-150 flex flex-col justify-between col-span-2 sm:col-span-1 lg:col-span-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-md bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 group-hover:scale-105 transition-transform duration-150">
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[10px] font-mono tracking-wider text-zinc-400 uppercase font-medium">Migration</span>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white tracking-tight">1-Click Import</div>
+                  <div className="text-[11px] text-zinc-400 mt-0.5 leading-normal">Bitwarden, 1Pass, Chrome</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -447,7 +489,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                 </div>
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-400">
                   <Lock className="w-3 h-3 text-emerald-400" />
-                  <span>https://dev-wealthpay.junomoney.org/login</span>
+                  <span>https://dashboard.stripe.com/login</span>
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60">
                     Host Isolated
                   </span>
@@ -534,12 +576,12 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                   {/* Form Mockup */}
                   <div className="p-5 rounded-xl bg-zinc-950 border border-zinc-800/80 shadow-inner space-y-3">
                     <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80 text-xs">
-                      <span className="font-medium text-zinc-300">Sign In to WealthPay Portal</span>
-                      <span className="font-mono text-[11px] text-zinc-500">dev-wealthpay.junomoney.org</span>
+                      <span className="font-medium text-zinc-300">Sign in to Stripe Dashboard</span>
+                      <span className="font-mono text-[11px] text-zinc-500">dashboard.stripe.com</span>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] font-mono text-zinc-400">Username / Email</label>
+                      <label className="text-[11px] font-mono text-zinc-400">Email Address</label>
                       <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-700 text-xs font-mono text-zinc-100 flex items-center justify-between">
                         <span>{DEMO_LOGINS[cycleIndex].username}</span>
                         <span className="text-[10px] font-sans px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400">
@@ -561,7 +603,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                   </div>
 
                   <div className="text-center text-[11px] font-mono text-zinc-500">
-                    Host isolation active: credentials for <code className="text-zinc-400">dev-admin.junomoney.org</code> are isolated and will not match here.
+                    Host isolation active: credentials for <code className="text-zinc-400">billing.stripe.com</code> are isolated and will not match here.
                   </div>
                 </div>
               )}
@@ -586,10 +628,10 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                       <>
                         <div className="text-xs text-zinc-300 space-y-1.5 mb-4">
                           <p>
-                            New credentials submitted on <strong className="text-white">dev-wealthpay.junomoney.org</strong>:
+                            New credentials submitted on <strong className="text-white">dashboard.stripe.com</strong>:
                           </p>
                           <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 font-mono text-xs text-zinc-300 flex items-center justify-between">
-                            <span>alex.devops@junomoney.org</span>
+                            <span>alex.developer@company.com</span>
                             <span className="text-zinc-500 text-[11px]">••••••••••••</span>
                           </div>
                         </div>
@@ -703,7 +745,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                 <div className="text-xs font-semibold text-white">Strict Subdomain Isolation</div>
               </div>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Authoritative host matching strictly isolates sibling subdomains (<code className="text-zinc-300 font-mono text-[11px]">dev-admin</code> vs <code className="text-zinc-300 font-mono text-[11px]">dev-wealthpay</code>), eliminating cross-environment leakage.
+                Authoritative host matching strictly isolates sibling subdomains (<code className="text-zinc-300 font-mono text-[11px]">billing.stripe.com</code> vs <code className="text-zinc-300 font-mono text-[11px]">dashboard.stripe.com</code>), eliminating cross-environment leakage.
               </p>
             </div>
 
@@ -876,7 +918,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               </div>
               <h3 className="text-sm font-semibold text-white mb-1.5">Strict Subdomain & Host Isolation</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Security boundaries between subdomains are strictly enforced. Separate testing, staging, and production environments (like <code className="text-zinc-300 font-mono">dev-admin</code> vs <code className="text-zinc-300 font-mono">dev-wealthpay</code>) never cross-contaminate credentials.
+                Security boundaries between subdomains are strictly enforced. Separate services and subdomains (like <code className="text-zinc-300 font-mono">billing.stripe.com</code> vs <code className="text-zinc-300 font-mono">dashboard.stripe.com</code>) never cross-contaminate credentials.
               </p>
             </div>
           </div>
@@ -1006,7 +1048,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                 How does Mountain prevent credential leakage across sibling subdomains?
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Mountain enforces strict origin and host hierarchy in the companion bridge. Distinct subdomains (e.g. <code className="text-zinc-300 font-mono">dev-wealthpay.domain.org</code> vs <code className="text-zinc-300 font-mono">dev-admin.domain.org</code>) are strictly isolated and never cross-pollinated or loosely resolved against titles. When a stored credential has an explicit domain, matching is authoritative, ensuring testing, staging, and internal portals cannot receive credentials intended for other services.
+                Mountain enforces strict origin and host hierarchy in the companion bridge. Distinct subdomains (e.g. <code className="text-zinc-300 font-mono">billing.stripe.com</code> vs <code className="text-zinc-300 font-mono">dashboard.stripe.com</code>) are strictly isolated and never cross-pollinated or loosely resolved against titles. When a stored credential has an explicit domain, matching is authoritative, ensuring testing, staging, and internal portals cannot receive credentials intended for other services.
               </p>
             </div>
           </div>

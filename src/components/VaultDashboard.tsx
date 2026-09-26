@@ -60,7 +60,7 @@ export function renderFormattedTitle(title: string) {
   if (domain && domain.includes('.')) {
     const parts = domain.split('.');
     if (parts.length >= 3) {
-      // Subdomain (e.g. "dev-wealthpay") + Root domain (e.g. "junomoney.org")
+      // Subdomain (e.g. "billing") + Root domain (e.g. "stripe.com")
       const sub = parts.slice(0, -2).join('.');
       const root = parts.slice(-2).join('.');
       return (

@@ -92,20 +92,20 @@ describe("Mountain Companion Bridge - Domain & Credential Matching", () => {
     });
 
     it("strictly isolates sibling subdomains and prevents cross-service credential leakage", () => {
-      const wealthPayUrl = "https://dev-wealthpay.junomoney.org/";
-      const adminCredUrl = "https://dev-admin.junomoney.org";
-      const wealthPayCredUrl = "https://dev-wealthpay.junomoney.org";
-      const rootCredUrl = "https://junomoney.org";
+      const dashboardUrl = "https://dashboard.stripe.com/";
+      const billingCredUrl = "https://billing.stripe.com";
+      const dashboardCredUrl = "https://dashboard.stripe.com";
+      const rootCredUrl = "https://stripe.com";
 
-      // dev-admin.junomoney.org must NOT match dev-wealthpay.junomoney.org
-      expect(matchesDomainOrTitle(adminCredUrl, "JunoMoney Admin", wealthPayUrl)).toBe(false);
-      expect(matchesDomainOrTitle(adminCredUrl, "JunoMoney", "dev-wealthpay.junomoney.org")).toBe(false);
+      // billing.stripe.com must NOT match dashboard.stripe.com
+      expect(matchesDomainOrTitle(billingCredUrl, "Stripe Billing", dashboardUrl)).toBe(false);
+      expect(matchesDomainOrTitle(billingCredUrl, "Stripe", "dashboard.stripe.com")).toBe(false);
 
-      // dev-wealthpay.junomoney.org matches exact domain
-      expect(matchesDomainOrTitle(wealthPayCredUrl, "JunoMoney WealthPay", wealthPayUrl)).toBe(true);
+      // dashboard.stripe.com matches exact domain
+      expect(matchesDomainOrTitle(dashboardCredUrl, "Stripe Dashboard", dashboardUrl)).toBe(true);
 
-      // Parent domain junomoney.org matches subdomains
-      expect(matchesDomainOrTitle(rootCredUrl, "JunoMoney", wealthPayUrl)).toBe(true);
+      // Parent domain stripe.com matches subdomains
+      expect(matchesDomainOrTitle(rootCredUrl, "Stripe", dashboardUrl)).toBe(true);
     });
   });
 });

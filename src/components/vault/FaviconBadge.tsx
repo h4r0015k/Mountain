@@ -17,8 +17,8 @@ export function extractDomain(url?: string): string | null {
 /**
  * Extracts a distinctive 1-to-2 letter monogram for offline site badges.
  * Handles subdomains intelligently:
- * e.g. "dev-wealthpay.junomoney.org" -> "WE"
- *      "dev-admin.junomoney.org"     -> "AD"
+ * e.g. "billing.stripe.com"          -> "BI"
+ *      "dashboard.stripe.com"        -> "DA"
  *      "irctc.co.in"                 -> "IR"
  *      "github.com"                  -> "GI"
  */
@@ -46,8 +46,8 @@ export function extractMonogram(url?: string, fallbackText = '•'): string {
     parts[parts.length - 2].length <= 3;
   const tldCount = isMultiTld ? 2 : 1;
   const domainParts = parts.slice(0, parts.length - tldCount);
-  const sld = domainParts[domainParts.length - 1]; // e.g. "junomoney"
-  const subdomains = domainParts.slice(0, domainParts.length - 1); // e.g. ["dev-wealthpay"]
+  const sld = domainParts[domainParts.length - 1]; // e.g. "stripe"
+  const subdomains = domainParts.slice(0, domainParts.length - 1); // e.g. ["billing"]
 
   if (subdomains.length > 0) {
     const rawSub = subdomains[subdomains.length - 1];

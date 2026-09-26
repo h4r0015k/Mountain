@@ -20,6 +20,7 @@ Most password managers store your encrypted vault on corporate cloud servers. Mo
 4. **User-Owned Backups:** Export encrypted `.json` backup files directly, or optionally sync snapshots to your personal Google Drive (`appDataFolder`) using client-side OAuth 2.0 PKCE. No intermediary servers ever touch your ciphertext.
 5. **Zero Data Leakage:** Built-in offline favicon mode, customizable inactivity auto-lock (1m–60m), 30-second clipboard wipe, and zero analytics or telemetry scripts.
 6. **Browser Companion Extension:** Manifest V3 extension with secure postMessage handshake (`window.location.origin` validation) for seamless autofill and credential capture.
+7. **Client-Side Vault Migration:** Import passwords directly from Bitwarden, 1Password, Google Chrome, Apple Passwords, or LastPass CSV/JSON exports with duplicate detection and zero network transmission.
 
 ---
 
@@ -37,7 +38,7 @@ Most password managers store your encrypted vault on corporate cloud servers. Mo
 - [x] UI / Web Application (React, Tailwind CSS, Lucide icons, responsive drawer navigation)
 - [x] Security & privacy controls (Inactivity auto-lock, clipboard auto-clear, zero-leakage offline mode)
 - [x] Mountain Companion Extension (Chrome / Edge / Brave MV3 extension with secure pairing)
-- [ ] CSV import (Google Chrome, Bitwarden, 1Password formats)
+- [x] Client-side vault migration & import (Bitwarden, 1Password, Google Chrome, Apple Passwords, LastPass)
 - [ ] Vault recycle bin / soft-delete with undo
 
 ---

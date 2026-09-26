@@ -9,7 +9,7 @@ import {
   CreditCard,
   Terminal,
   FileText,
-  Sparkles,
+  KeyRound,
   RefreshCw,
   Eye,
   EyeOff,
@@ -313,7 +313,7 @@ export const RecordFormDrawer: React.FC<Props> = ({
                     onClick={handleTogglePasswordGen}
                     className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 focus-ring rounded font-medium transition"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <KeyRound className="w-3.5 h-3.5" />
                     <span>{showInlineGen ? 'Hide Generator' : 'Generate Password'}</span>
                   </button>
                 </div>
@@ -556,7 +556,7 @@ export const RecordFormDrawer: React.FC<Props> = ({
                     onClick={handleGenerateApiKey}
                     className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 focus-ring rounded font-medium transition"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <KeyRound className="w-3.5 h-3.5" />
                     <span>Generate Secure Key</span>
                   </button>
                 </div>

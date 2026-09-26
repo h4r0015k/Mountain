@@ -24,6 +24,9 @@ import {
   Sparkles,
   MousePointerClick,
   ShieldCheck,
+  FileSpreadsheet,
+  Repeat,
+  Globe,
 } from 'lucide-react';
 
 const MATRIX_GLYPHS = '0123456789ABCDEF$#@%&*<>{}[]/?~!=+';
@@ -343,7 +346,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
           </div>
 
           {/* Product Pillars Metric Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-14 animate-fade-in-delayed-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-14 animate-fade-in-delayed-3">
             <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200">
               <div className="text-[11px] font-mono text-zinc-500 uppercase">Privacy</div>
               <div className="text-base font-semibold text-zinc-100 mt-1">100% Local</div>
@@ -366,6 +369,12 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <div className="text-[11px] font-mono text-zinc-500 uppercase">Cloud Sync</div>
               <div className="text-base font-semibold text-zinc-100 mt-1">Personal Drive</div>
               <div className="text-[11px] text-zinc-500 mt-0.5">Your private Google Drive</div>
+            </div>
+
+            <div className="col-span-2 sm:col-span-1 p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200">
+              <div className="text-[11px] font-mono text-zinc-500 uppercase">Migration</div>
+              <div className="text-base font-semibold text-zinc-100 mt-1">1-Click Import</div>
+              <div className="text-[11px] text-zinc-500 mt-0.5">Bitwarden, 1Password & CSV</div>
             </div>
           </div>
         </div>
@@ -417,12 +426,26 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
-                    <MousePointerClick className="w-4 h-4 text-zinc-200" />
+                    <Repeat className="w-4 h-4 text-zinc-200" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white">Right-click or press Cmd+Shift+L</h3>
+                    <h3 className="text-sm font-semibold text-white">Cmd+Shift+L with Multi-Account Cycling</h3>
                     <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                      Right-click on any username or password field to fill your details, or press <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px] border border-zinc-700">Cmd+Shift+L</kbd> (<kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px] border border-zinc-700">Ctrl+Shift+L</kbd> on Windows/Linux).
+                      Right-click or press <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px] border border-zinc-700">Cmd+Shift+L</kbd> (<kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px] border border-zinc-700">Ctrl+Shift+L</kbd> on Windows/Linux) to fill credentials. Have multiple accounts for the same site? Successive keypresses automatically cycle through each account with an on-screen count indicator.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-zinc-800 text-zinc-200 shrink-0 mt-0.5">
+                    <Globe className="w-4 h-4 text-zinc-200" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Strict Subdomain Isolation</h3>
+                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                      Authoritative host matching prevents sibling subdomains (such as <code className="text-zinc-300 font-mono">dev-wealthpay</code> vs <code className="text-zinc-300 font-mono">dev-admin</code>) from cross-pollinating credentials, ensuring staging, testing, and production secrets stay strictly isolated.
                     </p>
                   </div>
                 </div>
@@ -506,7 +529,10 @@ export const ShowcaseDashboard: React.FC<Props> = ({
                     </div>
                     <div className="p-2 rounded bg-zinc-950 border border-emerald-500/40 text-xs text-emerald-400 font-mono flex items-center justify-between">
                       <span>••••••••••••••••</span>
-                      <span className="text-[10px] text-emerald-400 font-mono">autofilled</span>
+                      <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>autofilled (1 of 2)</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -602,6 +628,26 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <h3 className="text-sm font-semibold text-white mb-1.5">Optional Google Drive or Local File Backups</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
                 Export encrypted .json backup files directly to your machine, or optionally connect your personal Google Drive for multi-device sync. Vault snapshots are sealed with authenticated AES-256-GCM before ever leaving your browser sandbox.
+              </p>
+            </div>
+
+            <div className="group p-5 rounded-xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all duration-300 hover:-translate-y-0.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                <FileSpreadsheet className="w-4 h-4 text-zinc-200" />
+              </div>
+              <h3 className="text-sm font-semibold text-white mb-1.5">Zero-Knowledge Vault Migration</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Switching from Bitwarden, 1Password, Chrome, Apple Passwords, or LastPass? Import CSV or JSON exports directly in your browser. All parsing, conflict resolution, and encryption execute client-side without ever touching external servers.
+              </p>
+            </div>
+
+            <div className="group p-5 rounded-xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all duration-300 hover:-translate-y-0.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                <Globe className="w-4 h-4 text-zinc-200" />
+              </div>
+              <h3 className="text-sm font-semibold text-white mb-1.5">Strict Subdomain & Host Isolation</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Security boundaries between subdomains are strictly enforced. Separate testing, staging, and production environments (like <code className="text-zinc-300 font-mono">dev-admin</code> vs <code className="text-zinc-300 font-mono">dev-wealthpay</code>) never cross-contaminate credentials.
               </p>
             </div>
           </div>
@@ -716,6 +762,22 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
                 Mountain communicates directly with Google's OAuth 2.0 PKCE endpoints without an intermediary backend. Encrypted snapshot files are written to the hidden Google Drive <code className="text-zinc-300 font-mono">appDataFolder</code>—a special directory accessible only by Mountain. Because data is encrypted before transmission, Google and network observers see only opaque ciphertext.
+              </p>
+            </div>
+
+            {/* Q6: Host & Subdomain Isolation */}
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[11px] font-mono text-zinc-400 font-semibold uppercase">06 // Host Isolation & Anti-Phishing</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60">
+                  Authoritative Matching
+                </span>
+              </div>
+              <h3 className="text-sm font-semibold text-white mb-1.5">
+                How does Mountain prevent credential leakage across sibling subdomains?
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Mountain enforces strict origin and host hierarchy in the companion bridge. Distinct subdomains (e.g. <code className="text-zinc-300 font-mono">dev-wealthpay.domain.org</code> vs <code className="text-zinc-300 font-mono">dev-admin.domain.org</code>) are strictly isolated and never cross-pollinated or loosely resolved against titles. When a stored credential has an explicit domain, matching is authoritative, ensuring testing, staging, and internal portals cannot receive credentials intended for other services.
               </p>
             </div>
           </div>

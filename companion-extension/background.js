@@ -320,7 +320,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
       if (response && isUnlocked && response.logins && response.logins.length > 0) {
         chrome.tabs.sendMessage(tab.id, {
-          action: 'FILL_LOGIN',
+          action: 'CYCLE_OR_FILL_LOGIN',
+          logins: response.logins,
           login: response.logins[0],
         }).catch(() => {});
       } else if (response && !isUnlocked) {

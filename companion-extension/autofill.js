@@ -91,7 +91,11 @@
     return null;
   }
 
-  function executeAutofill(loginItem) {
+  let currentCycleIndex = -1;
+  let lastCycleDomain = '';
+  let lastCycleTime = 0;
+
+  function executeAutofill(loginItem, cycleInfo = null) {
     const passInput = document.querySelector('input[type="password"]') || (lastTargetInput?.type === 'password' ? lastTargetInput : null);
     const userInput = findAssociatedUsernameInput(passInput || lastTargetInput);
 
@@ -111,10 +115,47 @@
     }
 
     if (filledCount > 0) {
-      showToast(`Autofilled ${loginItem.title || window.location.hostname} from Mountain`);
+      if (cycleInfo && cycleInfo.total > 1) {
+        const identifier = loginItem.username || loginItem.title || 'Account';
+        showToast(`Autofilled ${identifier} (${cycleInfo.index + 1} of ${cycleInfo.total})`);
+      } else {
+        const identifier = loginItem.username
+          ? `${loginItem.title || window.location.hostname} (${loginItem.username})`
+          : (loginItem.title || window.location.hostname);
+        showToast(`Autofilled ${identifier} from Mountain`);
+      }
     } else {
       showToast('Could not find login fields on this page', 'error');
     }
+  }
+
+  function cycleOrFillLogins(logins) {
+    if (!Array.isArray(logins) || logins.length === 0) {
+      showToast(`No matching credentials found for ${window.location.hostname}`, 'error');
+      return;
+    }
+
+    const currentDomain = window.location.hostname;
+    const now = Date.now();
+
+    // Reset cycling index if domain changed or user hasn't cycled for over 60 seconds
+    if (currentDomain !== lastCycleDomain || now - lastCycleTime > 60000) {
+      currentCycleIndex = -1;
+    }
+
+    lastCycleDomain = currentDomain;
+    lastCycleTime = now;
+
+    if (logins.length === 1) {
+      currentCycleIndex = 0;
+      executeAutofill(logins[0]);
+      return;
+    }
+
+    // Multiple accounts: cycle to next
+    currentCycleIndex = (currentCycleIndex + 1) % logins.length;
+    const targetLogin = logins[currentCycleIndex];
+    executeAutofill(targetLogin, { index: currentCycleIndex, total: logins.length });
   }
 
   // Track the most recently targeted input
@@ -133,8 +174,17 @@
   chrome.runtime.onMessage.addListener((message) => {
     if (!message || !message.action) return false;
 
+    if (message.action === 'CYCLE_OR_FILL_LOGIN') {
+      cycleOrFillLogins(message.logins || []);
+      return false;
+    }
+
     if (message.action === 'FILL_LOGIN') {
-      executeAutofill(message.login);
+      if (Array.isArray(message.logins)) {
+        cycleOrFillLogins(message.logins);
+      } else if (message.login) {
+        executeAutofill(message.login);
+      }
       return false;
     }
 
@@ -196,7 +246,7 @@
         }
 
         if (response.logins && response.logins.length > 0) {
-          executeAutofill(response.logins[0]);
+          cycleOrFillLogins(response.logins);
         } else {
           showToast(`No matching credentials found for ${window.location.hostname}`, 'error');
         }

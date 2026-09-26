@@ -90,5 +90,22 @@ describe("Mountain Companion Bridge - Domain & Credential Matching", () => {
       expect(matchesDomainOrTitle("https://github.com", "GitHub", targetDomain)).toBe(false);
       expect(matchesDomainOrTitle("", "AWS Console", targetDomain)).toBe(false);
     });
+
+    it("strictly isolates sibling subdomains and prevents cross-service credential leakage", () => {
+      const wealthPayUrl = "https://dev-wealthpay.junomoney.org/";
+      const adminCredUrl = "https://dev-admin.junomoney.org";
+      const wealthPayCredUrl = "https://dev-wealthpay.junomoney.org";
+      const rootCredUrl = "https://junomoney.org";
+
+      // dev-admin.junomoney.org must NOT match dev-wealthpay.junomoney.org
+      expect(matchesDomainOrTitle(adminCredUrl, "JunoMoney Admin", wealthPayUrl)).toBe(false);
+      expect(matchesDomainOrTitle(adminCredUrl, "JunoMoney", "dev-wealthpay.junomoney.org")).toBe(false);
+
+      // dev-wealthpay.junomoney.org matches exact domain
+      expect(matchesDomainOrTitle(wealthPayCredUrl, "JunoMoney WealthPay", wealthPayUrl)).toBe(true);
+
+      // Parent domain junomoney.org matches subdomains
+      expect(matchesDomainOrTitle(rootCredUrl, "JunoMoney", wealthPayUrl)).toBe(true);
+    });
   });
 });

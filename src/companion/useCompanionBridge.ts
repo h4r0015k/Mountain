@@ -43,15 +43,16 @@ export function matchesDomainOrTitle(itemUrl: string, itemTitle: string, targetD
   const targetRoot = getRootDomain(cleanTarget);
 
   const cleanItemDomain = normalizeDomain(itemUrl || '');
-  const itemRoot = getRootDomain(cleanItemDomain);
   const titleLower = (itemTitle || '').toLowerCase().trim();
 
-  // If itemUrl has a domain specified, enforce strict domain hierarchy
+  // If itemUrl has a domain specified, domain matching is strictly authoritative
   if (cleanItemDomain) {
-    // 1. Exact match
+    // 1. Exact match (e.g. dev-admin.junomoney.org === dev-admin.junomoney.org)
     if (cleanItemDomain === cleanTarget) return true;
 
-    // 2. Subdomain match (e.g. login.dev.to <-> dev.to, or dev.to <-> app.dev.to)
+    // 2. Subdomain hierarchy match:
+    // - Webpage is a subdomain of stored domain (e.g. item: dev.to, target: community.dev.to)
+    // - Stored domain is a subdomain of target domain (e.g. item: community.dev.to, target: dev.to)
     if (
       cleanItemDomain.endsWith(`.${cleanTarget}`) ||
       cleanTarget.endsWith(`.${cleanItemDomain}`)
@@ -59,31 +60,24 @@ export function matchesDomainOrTitle(itemUrl: string, itemTitle: string, targetD
       return true;
     }
 
-    // Security: If both item URL and target have explicit domains, require matching TLD
-    // to prevent cross-site phishing (e.g. paypal.com vs paypal.xyz)
-    const getTld = (d: string) => {
-      const parts = d.split('.');
-      return parts.length >= 2 ? parts[parts.length - 1] : '';
-    };
-    if (getTld(cleanItemDomain) !== getTld(cleanTarget)) {
-      return false;
-    }
-
-    // 3. Same root brand under same TLD (e.g. root "dev" under .to)
-    if (targetRoot && itemRoot && targetRoot === itemRoot) return true;
+    // Explicit domain set on record does not match target.
+    // Strictly isolate sibling subdomains (e.g. dev-wealthpay.junomoney.org vs dev-admin.junomoney.org)
+    // and do NOT fall back to fuzzy title matching.
+    return false;
   }
 
-  // 4. Exact title match with clean target or target root
+  // Fallback: If and only if NO domain was stored in itemUrl, check title matching
+  // 1. Exact title match with clean target or target root
   if (titleLower && (titleLower === cleanTarget || titleLower === targetRoot)) return true;
 
-  // 5. Title contains target domain or target root (e.g. Title "Dev.to Account" or "DEV Community", targetRoot "dev")
+  // 2. Title contains target domain or target root (e.g. Title "Dev.to Account" or "DEV Community", targetRoot "dev")
   if (cleanTarget && titleLower.includes(cleanTarget)) return true;
   if (targetRoot && targetRoot.length >= 2 && titleLower.includes(targetRoot)) return true;
 
-  // 6. Target domain contains title (e.g. target "dev.to" contains title "dev" or "dev.to")
+  // 3. Target domain contains title (e.g. target "dev.to" contains title "dev" or "dev.to")
   if (titleLower.length >= 2 && cleanTarget.includes(titleLower)) return true;
 
-  // 7. Punctuation-stripped comparison (e.g. title "dev to" or "devto" vs target "dev.to")
+  // 4. Punctuation-stripped comparison (e.g. title "dev to" or "devto" vs target "dev.to")
   const strippedTarget = cleanTarget.replace(/[^a-z0-9]/g, '');
   const strippedTitle = titleLower.replace(/[^a-z0-9]/g, '');
   if (strippedTitle && strippedTarget) {
@@ -92,8 +86,8 @@ export function matchesDomainOrTitle(itemUrl: string, itemTitle: string, targetD
     if (strippedTarget.length >= 3 && strippedTitle.includes(strippedTarget)) return true;
   }
 
-  // 8. If itemUrl was not provided or empty, also check if title itself looks like a domain that matches
-  if (!cleanItemDomain && titleLower.includes('.')) {
+  // 5. If title itself looks like a domain that matches target
+  if (titleLower.includes('.')) {
     const titleAsDomain = normalizeDomain(titleLower);
     if (titleAsDomain === cleanTarget || titleAsDomain.endsWith(`.${cleanTarget}`) || cleanTarget.endsWith(`.${titleAsDomain}`)) {
       return true;

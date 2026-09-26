@@ -30,86 +30,7 @@ import {
   Check,
 } from 'lucide-react';
 
-const MATRIX_GLYPHS = '0123456789ABCDEF$#@%&*<>{}[]/?~!=+';
 
-const ROTATING_ONE_LINERS = [
-  'Only on your hardware.',
-  'No servers. No telemetry.',
-  'Sealed with AES-256-GCM.',
-  'Offline by default.',
-  'Never on someone else\'s cloud.',
-  'Your keys. Your custody.',
-  'Zero accounts to breach.',
-];
-
-interface MatrixScrambleProps {
-  targetText: string;
-  className?: string;
-}
-
-const MatrixScrambleText: React.FC<MatrixScrambleProps> = ({
-  targetText,
-  className = ''
-}) => {
-  const [displayText, setDisplayText] = useState(targetText);
-  const [progressIndex, setProgressIndex] = useState(0);
-  const [isScrambling, setIsScrambling] = useState(true);
-
-  useEffect(() => {
-    setIsScrambling(true);
-    let step = 0;
-    const totalSteps = targetText.length;
-
-    const interval = setInterval(() => {
-      setDisplayText(() => {
-        return targetText
-          .split('')
-          .map((char, idx) => {
-            if (char === ' ') return ' ';
-            if (idx < Math.floor(step)) {
-              return targetText[idx];
-            }
-            return MATRIX_GLYPHS[Math.floor(Math.random() * MATRIX_GLYPHS.length)];
-          })
-          .join('');
-      });
-
-      setProgressIndex(Math.floor(step));
-
-      if (step >= totalSteps) {
-        clearInterval(interval);
-        setDisplayText(targetText);
-        setIsScrambling(false);
-      }
-
-      step += 0.8;
-    }, 30);
-
-    return () => clearInterval(interval);
-  }, [targetText]);
-
-  return (
-    <span className={`inline-block ${className}`}>
-      {displayText.split('').map((char, idx) => {
-        const isResolved = !isScrambling || idx < progressIndex;
-        const isLeadingChar = isScrambling && idx === progressIndex;
-
-        let style = 'text-zinc-400 transition-colors duration-100';
-        if (isLeadingChar) {
-          style = 'text-emerald-300 font-bold drop-shadow-[0_0_8px_rgba(52,211,153,0.9)]';
-        } else if (!isResolved) {
-          style = 'text-emerald-500/70 select-none';
-        }
-
-        return (
-          <span key={idx} className={style}>
-            {char}
-          </span>
-        );
-      })}
-    </span>
-  );
-};
 
 export const MountainIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
   <svg
@@ -141,9 +62,6 @@ export const ShowcaseDashboard: React.FC<Props> = ({
   vaultItemCount = 0,
   onLaunchVault,
 }) => {
-  // Rotating Hero One-Liners
-  const [phraseIndex, setPhraseIndex] = useState(0);
-
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Companion Extension Interactive Demo State
@@ -173,14 +91,6 @@ export const ShowcaseDashboard: React.FC<Props> = ({
     setHasCopiedGen(true);
     setTimeout(() => setHasCopiedGen(false), 1800);
   };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPhraseIndex((prev) => (prev + 1) % ROTATING_ONE_LINERS.length);
-    }, 3800);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 font-sans selection:bg-zinc-800 selection:text-white flex flex-col">
@@ -318,28 +228,22 @@ export const ShowcaseDashboard: React.FC<Props> = ({
 
         <div className="max-w-4xl mx-auto">
           {/* Status Badge */}
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400 mb-6 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span>ZERO-KNOWLEDGE • LOCAL-FIRST • OPEN SOURCE</span>
+            <span>Local-First • Zero-Knowledge • Open Source</span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.1] mb-5 animate-fade-in-delayed-1">
-            <div>Your passwords.</div>
-            <div className="mt-1.5 sm:mt-2 min-h-[3.6rem] sm:min-h-[2.5rem] md:min-h-[3rem] lg:min-h-[3.8rem] flex items-center">
-              <MatrixScrambleText
-                targetText={ROTATING_ONE_LINERS[phraseIndex]}
-                className="font-mono text-xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight"
-              />
-            </div>
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.12] mb-5">
+            The password manager that <span className="text-zinc-400">never leaves your hardware.</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-zinc-400 max-w-2xl leading-relaxed mb-8 animate-fade-in-delayed-2">
-            An open-source, local-first password manager. Encrypted client-side, optionally backed up to your personal Google Drive, and completely free of company-hosted databases.
+          <p className="text-sm sm:text-base text-zinc-400 max-w-2xl leading-relaxed mb-8">
+            Mountain encrypts everything client-side using authenticated AES-256-GCM and a 12-word BIP-39 recovery key. No user accounts to breach, no telemetry, and zero remote database reliance.
           </p>
 
           {/* Action Button Group */}
-          <div className="flex flex-wrap items-center gap-3 mb-6 animate-fade-in-delayed-3">
+          <div className="flex flex-wrap items-center gap-3 mb-6">
             <button
               onClick={onLaunchVault}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs sm:text-sm transition-all active:scale-[0.98] shadow-sm"
@@ -350,10 +254,17 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             </button>
 
             <a
+              href="#companion-extension"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800/80 border border-zinc-800 text-zinc-200 font-medium text-xs sm:text-sm transition-colors"
+            >
+              <span>Browser Extension</span>
+            </a>
+
+            <a
               href="#how-it-works"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800/80 border border-zinc-800 text-zinc-200 font-medium text-xs sm:text-sm transition-colors"
             >
-              <span>See How It Works</span>
+              <span>Architecture</span>
             </a>
 
             <a
@@ -370,8 +281,8 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             </a>
           </div>
 
-          <div className="text-[11px] font-mono text-zinc-500 animate-fade-in-delayed-3">
-            • Free forever • No subscriptions • Zero tracking • No account creation needed
+          <div className="text-[11px] font-mono text-zinc-500">
+            Free & Open Source under ISC License • Zero analytics • Offline-first
           </div>
 
           {/* Product Pillars Dock */}
@@ -897,13 +808,13 @@ export const ShowcaseDashboard: React.FC<Props> = ({
         <div className="max-w-4xl mx-auto">
           <div className="mb-12">
             <div className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
-              Core Concept
+              Architecture & Custody
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              Why Mountain is built differently
+              Built for custody, not subscription lock-in
             </h2>
             <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-2xl">
-              Traditional password managers ask you to trust their corporate servers with your most sensitive credentials. Mountain changes that relationship completely.
+              Most password managers require trusting a centralized backend with your encrypted vault blobs. Mountain operates as a local utility, keeping all cryptographic operations entirely on your device.
             </p>
           </div>
 
@@ -912,9 +823,9 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                 <HardDrive className="w-4 h-4 text-zinc-200" />
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">No Company Servers</h3>
+              <h3 className="text-sm font-semibold text-white mb-1.5">Zero Remote Databases</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                When a regular password manager company gets breached, your encrypted vault is out there. With Mountain, there is no company server to hack. The app runs straight in your web browser and stores data only in your local browser storage.
+                Data is persisted solely to your browser's origin-isolated IndexedDB storage. There are no corporate accounts or cloud databases to target or breach.
               </p>
             </div>
 
@@ -922,9 +833,9 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                 <KeyRound className="w-4 h-4 text-zinc-200" />
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">A 12-Word Paper Key</h3>
+              <h3 className="text-sm font-semibold text-white mb-1.5">BIP-39 Master Recovery Key</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Instead of relying on a password that can be forgotten or guessed, Mountain generates a 12-word master recovery phrase (BIP-39). Written down offline, it serves as your permanent, self-custodied master key.
+                Your vault root is generated from 128 bits of CSPRNG hardware entropy mapped to a 12-word recovery phrase. Kept offline, it guarantees permanent self-custody.
               </p>
             </div>
 
@@ -932,9 +843,9 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                 <Smartphone className="w-4 h-4 text-zinc-200" />
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">Fast Daily Unlock</h3>
+              <h3 className="text-sm font-semibold text-white mb-1.5">Local Envelope PIN Unlock</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                You don't need to type 12 words on every unlock. An optional daily PIN unlocks a local cryptographic envelope on your trusted device, while your recovery phrase remains the permanent master key.
+                Typing 12 words on every unlock isn't practical. An optional PIN wraps your root mnemonic in a local 100,000-iteration PBKDF2 envelope on authorized devices.
               </p>
             </div>
 
@@ -942,9 +853,9 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                 <FolderLock className="w-4 h-4 text-zinc-200" />
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">Optional Google Drive or Local File Backups</h3>
+              <h3 className="text-sm font-semibold text-white mb-1.5">Encrypted Cloud Sync & Export</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Export encrypted .json backup files directly to your machine, or optionally connect your personal Google Drive for multi-device sync. Vault snapshots are sealed with authenticated AES-256-GCM before ever leaving your browser sandbox.
+                Export encrypted .json backup snapshots directly to disk, or sync to your personal Google Drive appDataFolder via OAuth 2.0 PKCE with client-side AEAD encryption.
               </p>
             </div>
 
@@ -952,9 +863,9 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                 <FileSpreadsheet className="w-4 h-4 text-zinc-200" />
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">Zero-Knowledge Vault Migration</h3>
+              <h3 className="text-sm font-semibold text-white mb-1.5">Client-Side Vault Migration</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Switching from Bitwarden, 1Password, Chrome, Apple Passwords, or LastPass? Import CSV or JSON exports directly in your browser. All parsing, conflict resolution, and encryption execute client-side without ever touching external servers.
+                Switching from Bitwarden, 1Password, Chrome, Apple Passwords, or LastPass? Import CSV or JSON exports directly in your browser without network transit.
               </p>
             </div>
 
@@ -962,7 +873,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                 <Globe className="w-4 h-4 text-zinc-200" />
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">Strict Subdomain & Host Isolation</h3>
+              <h3 className="text-sm font-semibold text-white mb-1.5">Strict Subdomain Isolation</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
                 Security boundaries between subdomains are strictly enforced. Separate services and subdomains (like <code className="text-zinc-300 font-mono">billing.stripe.com</code> vs <code className="text-zinc-300 font-mono">dashboard.stripe.com</code>) never cross-contaminate credentials.
               </p>
@@ -979,13 +890,13 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             <div>
               <div className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-2">
                 <Terminal className="w-3.5 h-3.5 text-zinc-400" />
-                <span>For Engineers & Cryptographers</span>
+                <span>Security Specifications</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                Technical Architecture & Security
+                Cryptographic Architecture & Primitives
               </h2>
               <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-xl">
-                Answers to technical questions about encryption primitives, key derivation, memory lifecycle, and threat models.
+                Formal implementation specifications of Mountain's client-side zero-knowledge security and persistence model.
               </p>
             </div>
 
@@ -1000,102 +911,120 @@ export const ShowcaseDashboard: React.FC<Props> = ({
             </a>
           </div>
 
-          {/* Technical Q&A / Spec Matrix */}
-          <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900/40 divide-y divide-zinc-800 mb-8">
-            {/* Q1: Encryption */}
-            <div className="p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[11px] font-mono text-zinc-400 font-semibold uppercase">01 // Payload Encryption</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60">
-                  AES-256-GCM
-                </span>
+          {/* Cryptographic Specifications Matrix */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {/* Spec 1: Encryption */}
+            <div className="p-5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700/80 transition-colors flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span className="text-xs font-semibold text-white">Payload Encryption</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60 shrink-0">
+                    AES-256-GCM
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Native Web Cryptography API implementation conforming to NIST SP 800-38D. Every saved credential receives a unique 12-byte initialization vector (IV) generated via <code className="text-zinc-300 font-mono text-[11px]">crypto.getRandomValues()</code>. 128-bit authentication tags provide tamper-evident AEAD integrity, failing closed on any ciphertext modification.
+                </p>
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">
-                How are credentials encrypted and protected against tampering?
-              </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Mountain uses <strong>AES-256-GCM</strong> (Authenticated Encryption with Associated Data, NIST SP 800-38D) directly via the browser's native Web Cryptography API. Every saved credential receives a fresh, cryptographically random 12-byte initialization vector (IV) generated with <code className="text-zinc-300 font-mono">crypto.getRandomValues()</code>. This guarantees nonce uniqueness and detects any ciphertext modification or bit-flipping attacks immediately.
-              </p>
+              <div className="mt-4 pt-3 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-500 flex items-center justify-between">
+                <span>Key length: 256 bits</span>
+                <span>Nonce: 96 bits unique IV</span>
+              </div>
             </div>
 
-            {/* Q2: KDF */}
-            <div className="p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[11px] font-mono text-zinc-400 font-semibold uppercase">02 // Key Derivation</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60">
-                  PBKDF2 (600,000 rounds)
-                </span>
+            {/* Spec 2: KDF */}
+            <div className="p-5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700/80 transition-colors flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span className="text-xs font-semibold text-white">Key Derivation</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60 shrink-0">
+                    PBKDF2-HMAC-SHA256
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Master root keys are derived from the mnemonic seed using PBKDF2-HMAC-SHA256 with 600,000 iterations and a 16-byte CSPRNG salt, exceeding OWASP password storage recommendations. Optional quick-unlock PINs use an isolated 100,000-iteration envelope to decrypt the root key exclusively on authorized local hardware.
+                </p>
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">
-                How does key derivation defend against brute-force attacks?
-              </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Your 12-word mnemonic master root key is derived using <strong>PBKDF2-HMAC-SHA256</strong> with <strong>600,000 iterations</strong> and a unique 16-byte cryptographic salt (exceeding OWASP password storage recommendations). Optional quick-unlock PINs use an isolated 100,000-iteration local envelope to decrypt the root mnemonic exclusively on your authorized device.
-              </p>
+              <div className="mt-4 pt-3 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-500 flex items-center justify-between">
+                <span>Master: 600,000 rounds</span>
+                <span>PIN: 100,000 rounds</span>
+              </div>
             </div>
 
-            {/* Q3: Mnemonic */}
-            <div className="p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[11px] font-mono text-zinc-400 font-semibold uppercase">03 // Master Identity</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60">
-                  BIP-39 Standard
-                </span>
+            {/* Spec 3: Mnemonic */}
+            <div className="p-5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700/80 transition-colors flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span className="text-xs font-semibold text-white">Master Identity & Seed</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60 shrink-0">
+                    BIP-39 Standard
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Vault identity derives from 128 bits of CSPRNG hardware entropy mapped to 12 words from the standardized 2,048-word English dictionary, verified by a SHA-256 checksum. Master seeds expand deterministically into 512-bit root keys without requiring third-party verification servers.
+                </p>
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">
-                How does the 12-word recovery seed work mathematically?
-              </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Mountain implements the Bitcoin BIP-39 standard using the audited <code className="text-zinc-300 font-mono">@scure/bip39</code> library. 128 bits of CSPRNG entropy are sampled from the system hardware, mapped to 12 words from the standardized 2,048-word English dictionary, and verified via a SHA-256 checksum. Master seeds can be deterministically expanded into 512-bit root keys without relying on third-party verification servers.
-              </p>
+              <div className="mt-4 pt-3 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-500 flex items-center justify-between">
+                <span>Entropy: 128-bit CSPRNG</span>
+                <span>Checksum: SHA-256</span>
+              </div>
             </div>
 
-            {/* Q4: Storage */}
-            <div className="p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[11px] font-mono text-zinc-400 font-semibold uppercase">04 // Client Persistence</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60">
-                  Native IndexedDB
-                </span>
+            {/* Spec 4: Storage */}
+            <div className="p-5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700/80 transition-colors flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span className="text-xs font-semibold text-white">Client Persistence</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60 shrink-0">
+                    IndexedDB Sandbox
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  All records are stored asynchronously in the browser's origin-isolated IndexedDB database (<code className="text-zinc-300 font-mono text-[11px]">mountain_vault_db</code>). Snapshots are persisted strictly in encrypted AEAD format. The application contains zero analytics trackers, zero external fonts, and sends zero telemetry requests.
+                </p>
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">
-                Where is the encrypted data stored on the machine?
-              </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                All data is saved asynchronously to your browser's origin-isolated IndexedDB database (<code className="text-zinc-300 font-mono">mountain_vault_db</code>). Snapshots are stored exclusively in their encrypted AEAD form. The application contains zero analytics trackers, zero external fonts, and sends zero telemetry requests.
-              </p>
+              <div className="mt-4 pt-3 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-500 flex items-center justify-between">
+                <span>Origin: Same-origin isolated</span>
+                <span>Telemetry: Zero network calls</span>
+              </div>
             </div>
 
-            {/* Q5: Sync */}
-            <div className="p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[11px] font-mono text-zinc-400 font-semibold uppercase">05 // Private Cloud Sync</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60">
-                  Google Drive appDataFolder
-                </span>
+            {/* Spec 5: Sync */}
+            <div className="p-5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700/80 transition-colors flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span className="text-xs font-semibold text-white">Private Cloud Sync</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60 shrink-0">
+                    OAuth 2.0 PKCE
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Direct communication with Google OAuth 2.0 PKCE endpoints without intermediary servers. Encrypted snapshots are written to the sandboxed Google Drive <code className="text-zinc-300 font-mono text-[11px]">appDataFolder</code>. Because encryption occurs client-side prior to transit, Google and network observers see only opaque ciphertext.
+                </p>
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">
-                How does sync work without intermediate servers?
-              </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Mountain communicates directly with Google's OAuth 2.0 PKCE endpoints without an intermediary backend. Encrypted snapshot files are written to the hidden Google Drive <code className="text-zinc-300 font-mono">appDataFolder</code>—a special directory accessible only by Mountain. Because data is encrypted before transmission, Google and network observers see only opaque ciphertext.
-              </p>
+              <div className="mt-4 pt-3 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-500 flex items-center justify-between">
+                <span>Scope: drive.appdata</span>
+                <span>Storage: Client-sealed</span>
+              </div>
             </div>
 
-            {/* Q6: Host & Subdomain Isolation */}
-            <div className="p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[11px] font-mono text-zinc-400 font-semibold uppercase">06 // Host Isolation & Anti-Phishing</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60">
-                  Authoritative Matching
-                </span>
+            {/* Spec 6: Host Isolation */}
+            <div className="p-5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700/80 transition-colors flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span className="text-xs font-semibold text-white">Subdomain Isolation</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60 shrink-0">
+                    Authoritative Matching
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  The companion bridge enforces strict host hierarchy. Separate subdomains (such as <code className="text-zinc-300 font-mono text-[11px]">billing.stripe.com</code> vs <code className="text-zinc-300 font-mono text-[11px]">dashboard.stripe.com</code>) are strictly isolated and never cross-pollinate credentials. When a record defines a domain, matching is authoritative to prevent credential leakage.
+                </p>
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">
-                How does Mountain prevent credential leakage across sibling subdomains?
-              </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Mountain enforces strict origin and host hierarchy in the companion bridge. Distinct subdomains (e.g. <code className="text-zinc-300 font-mono">billing.stripe.com</code> vs <code className="text-zinc-300 font-mono">dashboard.stripe.com</code>) are strictly isolated and never cross-pollinated or loosely resolved against titles. When a stored credential has an explicit domain, matching is authoritative, ensuring testing, staging, and internal portals cannot receive credentials intended for other services.
-              </p>
+              <div className="mt-4 pt-3 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-500 flex items-center justify-between">
+                <span>Boundary: Full hostname match</span>
+                <span>Cross-origin: Disallowed</span>
+              </div>
             </div>
           </div>
         </div>

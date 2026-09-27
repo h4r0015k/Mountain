@@ -2,7 +2,7 @@
 
 A free, local-first, open-source password manager. Encrypted client-side, optionally backed up to your personal Google Drive, and completely free of company-hosted databases.
 
-🚀 **Live Web App**: [https://h4r0015k.github.io/Mountain/](https://h4r0015k.github.io/Mountain/)
+🚀 **Live Web App**: [https://nikhilsahani.com/Mountain/](https://nikhilsahani.com/Mountain/) (Mirror: [https://h4r0015k.github.io/Mountain/](https://h4r0015k.github.io/Mountain/))
 
 <p align="center">
   <img src="./demo.gif" alt="Mountain Password Manager Demo" width="100%" />
@@ -21,6 +21,7 @@ Most password managers store your encrypted vault on corporate cloud servers. Mo
 5. **Zero Data Leakage:** Built-in offline favicon mode, customizable inactivity auto-lock (1m–60m), 30-second clipboard wipe, and zero analytics or telemetry scripts.
 6. **Browser Companion Extension:** Manifest V3 extension with secure postMessage handshake (`window.location.origin` validation) for seamless autofill and credential capture.
 7. **Client-Side Vault Migration:** Import passwords directly from Bitwarden, 1Password, Google Chrome, Apple Passwords, or LastPass CSV/JSON exports with duplicate detection and zero network transmission.
+8. **Local Agent Bridge (MCP):** Expose credentials on demand to local developer tools (Claude Desktop, Cursor, CLI scripts) via the Model Context Protocol. The master key never leaves the browser tab, and requests are authenticated with a 128-bit Bearer token.
 
 ---
 
@@ -39,7 +40,40 @@ Most password managers store your encrypted vault on corporate cloud servers. Mo
 - [x] Security & privacy controls (Inactivity auto-lock, clipboard auto-clear, zero-leakage offline mode)
 - [x] Mountain Companion Extension (Chrome / Edge / Brave MV3 extension with secure pairing)
 - [x] Client-side vault migration & import (Bitwarden, 1Password, Google Chrome, Apple Passwords, LastPass)
+- [x] Model Context Protocol (MCP) local agent bridge (`mountain-mcp`) with Bearer token authentication
 - [ ] Vault recycle bin / soft-delete with undo
+
+---
+
+## Local Agent Bridge (Model Context Protocol)
+
+When developing or running local AI coding tools (Claude Desktop, Cursor, test scripts), tools often need API keys or database passwords. Instead of pasting secrets into chats or leaving them in `.env` files, Mountain provides a secure local MCP bridge:
+
+```bash
+# 1. Start the bridge (inside Mountain directory):
+npm run mcp
+# or directly: node mountain-mcp/index.js
+
+# 2. In Mountain: Settings → Companion → click Connect and copy your Bearer Token
+
+# 3. Add to claude_desktop_config.json:
+{
+  "mcpServers": {
+    "mountain": {
+      "url": "http://127.0.0.1:27182/sse?token=mntn_your_bearer_token"
+    }
+  }
+}
+
+# Or add via Claude Code CLI:
+claude mcp add mountain "http://127.0.0.1:27182/sse?token=mntn_your_bearer_token"
+```
+
+### Security Guarantees:
+- **Master key never leaves the browser**: Decryption happens strictly in `window.crypto.subtle` in your browser tab.
+- **Timing-safe Bearer Token**: Bound to `127.0.0.1` and protected with a 128-bit CSPRNG token (`mntn_...`).
+- **No vault dumps**: Tools only support `vault_status`, `list_domains` (titles and hosts only), and `get_credential` (exact domain lookup).
+- **Auto-revocation**: Disconnecting, locking your vault, or closing the tab immediately terminates the bridge.
 
 ---
 
@@ -89,11 +123,12 @@ The `companion-extension/` directory contains an unpacked Manifest V3 browser ex
 - **Frontend**: TypeScript, React 18, Tailwind CSS, Lucide Icons, Vite
 - **Cryptography**: Web Crypto API (SubtleCrypto: AES-256-GCM, PBKDF2), `@scure/bip39`
 - **Storage**: Browser IndexedDB (Local-First)
-- **Development**: Developed with AI pair-programming assistance from Google Gemini.
+- **Agent Protocol**: Model Context Protocol (MCP) over SSE / WebSocket
 
 ---
 
 ## License
 
-MIT
+ISC
+
 

@@ -75,6 +75,128 @@ export const VaultSettingsView: React.FC<Props> = ({
   // Companion Tab State
   const [copiedPairingCode, setCopiedPairingCode] = useState(false);
 
+  // MCP Bridge State
+  const [mcpStatus, setMcpStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [mcpToken, setMcpToken] = useState<string>(() => {
+    try {
+      const stored = localStorage.getItem('mountain_mcp_auth_token');
+      if (stored && stored.startsWith('mntn_') && stored.length >= 20) return stored;
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      const created = 'mntn_' + Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+      localStorage.setItem('mountain_mcp_auth_token', created);
+      return created;
+    } catch {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return 'mntn_' + Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    }
+  });
+  const [copiedMcpToken, setCopiedMcpToken] = useState(false);
+  const mcpWsRef = React.useRef<WebSocket | null>(null);
+
+  const handleCopyMcpToken = async () => {
+    try {
+      await navigator.clipboard.writeText(mcpToken);
+      setCopiedMcpToken(true);
+      onShowToast('MCP Bearer Token copied');
+      setTimeout(() => setCopiedMcpToken(false), 2000);
+    } catch {}
+  };
+
+  const handleRegenerateMcpToken = () => {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    const newToken = 'mntn_' + Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    try {
+      localStorage.setItem('mountain_mcp_auth_token', newToken);
+    } catch {}
+    setMcpToken(newToken);
+    if (mcpWsRef.current?.readyState === WebSocket.OPEN) {
+      mcpWsRef.current.send(JSON.stringify({ action: 'SET_TOKEN', token: newToken }));
+    }
+    onShowToast('New MCP Token generated & rotated');
+  };
+
+  // Disconnect MCP when switching away from the companion tab
+  useEffect(() => {
+    if (activeTab !== 'companion' && mcpWsRef.current) {
+      mcpWsRef.current.close();
+      mcpWsRef.current = null;
+      setMcpStatus('disconnected');
+    }
+  }, [activeTab]);
+
+  // Cleanup WebSocket on unmount (when closing settings view)
+  useEffect(() => {
+    return () => {
+      if (mcpWsRef.current) {
+        mcpWsRef.current.close();
+        mcpWsRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleConnectMcp = () => {
+    // Disconnect if already connected
+    if (mcpWsRef.current) {
+      mcpWsRef.current.close();
+      mcpWsRef.current = null;
+      setMcpStatus('disconnected');
+      return;
+    }
+
+    setMcpStatus('connecting');
+
+    try {
+      const ws = new WebSocket(`ws://localhost:27182/spa?token=${encodeURIComponent(mcpToken)}`);
+
+      ws.addEventListener('open', () => {
+        setMcpStatus('connected');
+        ws.send(JSON.stringify({ action: 'SET_TOKEN', token: mcpToken }));
+        onShowToast('MCP bridge connected');
+      });
+
+      ws.addEventListener('message', (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.source !== 'MOUNTAIN_MCP_BRIDGE') return;
+
+          // Dispatch to the SPA bridge handler
+          window.postMessage(msg, window.location.origin);
+
+          // One-shot listener: forward the SPA response back to the bridge
+          const handleResponse = (e: MessageEvent) => {
+            if (e.data?.source !== 'MOUNTAIN_SPA' || e.data?.requestId !== msg.requestId) return;
+            window.removeEventListener('message', handleResponse);
+            if (mcpWsRef.current?.readyState === WebSocket.OPEN) {
+              mcpWsRef.current.send(JSON.stringify(e.data));
+            }
+          };
+          window.addEventListener('message', handleResponse);
+          setTimeout(() => window.removeEventListener('message', handleResponse), 6000);
+        } catch {}
+      });
+
+      ws.addEventListener('close', () => {
+        setMcpStatus('disconnected');
+        mcpWsRef.current = null;
+      });
+
+      ws.addEventListener('error', () => {
+        setMcpStatus('disconnected');
+        onShowToast('Could not connect — is mountain-mcp running?');
+        mcpWsRef.current = null;
+        ws.close();
+      });
+
+      mcpWsRef.current = ws;
+    } catch {
+      setMcpStatus('disconnected');
+      onShowToast('Failed to connect to MCP bridge');
+    }
+  };
+
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
@@ -541,102 +663,184 @@ export const VaultSettingsView: React.FC<Props> = ({
 
           {/* TAB 4: COMPANION EXTENSION */}
           {activeTab === 'companion' && companion && (
-            <div className="space-y-6 animate-fade-in">
-              <div>
-                <h3 className="text-base font-semibold text-zinc-100">Browser Extension Companion</h3>
-                <p className="text-xs text-zinc-400 mt-1">
-                  Connect the Mountain browser extension to enable autofill across websites.
-                </p>
+            <div className="space-y-8 animate-fade-in">
+
+              {/* ── Extension Pairing ─────────────────────────────── */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-100">Browser Extension</h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Pair the companion extension to enable autofill on websites.
+                  </p>
+                </div>
+
+                {companion.isPaired ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-emerald-800/40 bg-emerald-950/20">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium text-emerald-300">Extension paired</span>
+                        <span className="text-xs text-zinc-500 ml-2">· session token · postMessage IPC</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={companion.unpair}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-zinc-500 hover:text-rose-400 border border-zinc-800 hover:border-rose-900/60 text-xs transition"
+                      >
+                        <Unlink className="w-3 h-3" />
+                        Unpair
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 text-center space-y-4">
+                      <div>
+                        <p className="text-[11px] text-zinc-500 uppercase tracking-wider mb-2">One-time pairing code</p>
+                        <div className="font-mono text-4xl font-bold tracking-widest text-zinc-100 select-all">
+                          {formattedPairingCode || '--- ---'}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleCopyPairingCode}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/80 text-xs font-medium text-zinc-200 transition"
+                        >
+                          {copiedPairingCode ? (
+                            <><Check className="w-3.5 h-3.5 text-emerald-400" /><span className="text-emerald-400">Copied</span></>
+                          ) : (
+                            <><Copy className="w-3.5 h-3.5 text-zinc-400" /><span>Copy</span></>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={companion.regeneratePairingCode}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/80 text-xs text-zinc-400 hover:text-zinc-200 transition"
+                          title="Generate a new code"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          New code
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-zinc-500 px-1">
+                      Click the Mountain extension icon → enter the code → Authorize.
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {companion.isPaired ? (
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-emerald-800/40 bg-emerald-950/20 p-4 sm:p-5 flex items-start gap-3.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <div className="text-xs font-semibold text-emerald-300">
-                        Extension Connected &amp; Authorized
+              {/* ── MCP Bridge ───────────────────────────────────── */}
+              <div className="space-y-4 border-t border-zinc-800/60 pt-6">
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-100">AI Agent Bridge</h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Lets local AI tools (Claude, Cursor) fetch credentials on demand via MCP.
+                    Your master key stays in this tab — the bridge only passes individual credentials.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl border border-zinc-800 bg-zinc-900/40">
+                  <div className="space-y-0.5">
+                    {mcpStatus === 'connected' ? (
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-300">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Connected · port 27182
                       </div>
-                      <p className="text-xs text-zinc-400 leading-relaxed">
-                        The browser extension is authenticated via an in-memory session token.
-                        Autofill requests from web pages are handled securely over this channel.
-                      </p>
+                    ) : mcpStatus === 'connecting' ? (
+                      <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Connecting...
+                      </div>
+                    ) : (
+                      <div className="text-xs text-zinc-400">Not connected</div>
+                    )}
+                    <div className="text-[11px] text-zinc-600 font-mono">
+                      vault_status · list_domains · get_credential
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleConnectMcp}
+                    disabled={mcpStatus === 'connecting'}
+                    className={`shrink-0 px-3 py-1.5 rounded-lg border text-xs font-medium transition disabled:opacity-40 ${
+                      mcpStatus === 'connected'
+                        ? 'border-zinc-700 text-zinc-400 hover:border-rose-900/60 hover:text-rose-400'
+                        : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                    }`}
+                  >
+                    {mcpStatus === 'connected' ? 'Disconnect' : 'Connect'}
+                  </button>
+                </div>
 
-                  <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 divide-y divide-zinc-800/60 text-xs">
-                    <div className="py-1.5 flex items-center justify-between text-zinc-400">
-                      <span>Connection Channel</span>
-                      <span className="font-mono text-zinc-200">Window postMessage</span>
-                    </div>
-                    <div className="py-1.5 flex items-center justify-between text-zinc-400">
-                      <span>Token Lifetime</span>
-                      <span className="font-mono text-zinc-200">Active Tab Session</span>
-                    </div>
+                {/* Bearer Token row */}
+                <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-zinc-800 bg-zinc-950/60 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-zinc-500 shrink-0 font-medium">Bearer Token:</span>
+                    <span className="font-mono text-zinc-300 truncate select-all">{mcpToken}</span>
                   </div>
-
-                  <div className="pt-2">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
-                      onClick={companion.unpair}
-                      className="flex items-center space-x-2 py-2 px-3 bg-zinc-900 hover:bg-rose-950/30 hover:border-rose-800/60 hover:text-rose-300 text-zinc-400 border border-zinc-800 rounded-lg text-xs font-medium transition"
+                      onClick={handleCopyMcpToken}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-medium transition"
                     >
-                      <Unlink className="w-3.5 h-3.5" />
-                      <span>Disconnect Extension</span>
+                      {copiedMcpToken ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-zinc-400" />}
+                      <span>{copiedMcpToken ? 'Copied' : 'Copy'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRegenerateMcpToken}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 text-[11px] transition"
+                      title="Rotate Bearer Token"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Rotate</span>
                     </button>
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 text-center space-y-3">
-                    <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
-                      One-Time Pairing Code
-                    </div>
-                    <div className="font-mono text-3xl sm:text-4xl font-bold tracking-widest text-zinc-100 select-all">
-                      {formattedPairingCode || '--- ---'}
-                    </div>
-                    <div className="flex items-center justify-center gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={handleCopyPairingCode}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/80 text-xs font-medium text-zinc-200 transition"
-                      >
-                        {copiedPairingCode ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="text-emerald-400">Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5 text-zinc-400" />
-                            <span>Copy Code</span>
-                          </>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={companion.regeneratePairingCode}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/80 text-xs font-medium text-zinc-400 hover:text-zinc-200 transition"
-                        title="Generate a new code"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        <span>Regenerate</span>
-                      </button>
-                    </div>
-                  </div>
 
-                  <div className="rounded-xl border border-zinc-800 bg-zinc-900/20 p-4 text-xs space-y-2">
-                    <div className="font-medium text-zinc-300">How to connect:</div>
-                    <ol className="list-decimal list-inside space-y-1 text-zinc-400 text-xs">
-                      <li>Click the Mountain extension icon in your browser toolbar.</li>
-                      <li>Enter the 6-digit code shown above and click <strong>Authorize</strong>.</li>
-                      <li>The extension will pair instantly and enable autofill.</li>
-                    </ol>
+                {mcpStatus === 'connected' ? (
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3.5 space-y-2.5">
+                    <p className="text-[11px] text-zinc-400 font-medium">Add to <span className="font-mono text-zinc-300">claude_desktop_config.json</span>:</p>
+                    <pre className="font-mono text-[11px] text-zinc-300 leading-relaxed overflow-x-auto bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800/80">
+{`{
+  "mcpServers": {
+    "mountain": {
+      "url": "http://127.0.0.1:27182/sse?token=${mcpToken}"
+    }
+  }
+}`}
+                    </pre>
+                    <div className="pt-1 border-t border-zinc-800/60 space-y-1">
+                      <p className="text-[11px] text-zinc-400">Or add via Claude Code CLI:</p>
+                      <pre className="font-mono text-[10px] text-emerald-400 bg-zinc-900/80 px-2 py-1 rounded border border-zinc-800 select-all overflow-x-auto">
+claude mcp add mountain "http://127.0.0.1:27182/sse?token={mcpToken}"
+                      </pre>
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-3.5 space-y-2 text-xs">
+                    <div className="text-zinc-400 font-medium">Start the local bridge in a terminal:</div>
+                    <div className="space-y-1.5 font-mono text-[11px]">
+                      <div className="text-zinc-200 bg-zinc-900 px-2.5 py-1.5 rounded-lg border border-zinc-800 select-all flex items-center justify-between">
+                        <span>npm run mcp</span>
+                        <span className="text-[10px] text-zinc-500 font-sans">Inside Mountain directory</span>
+                      </div>
+                      <div className="text-zinc-500 text-[10px] px-0.5">
+                        Or run directly: <span className="text-zinc-400 select-all">node mountain-mcp/index.js</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+
             </div>
           )}
+
+
         </div>
       </main>
     </div>

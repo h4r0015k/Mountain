@@ -28,6 +28,8 @@ import {
   Repeat,
   Globe,
   Check,
+  Bot,
+  Code2,
 } from 'lucide-react';
 
 
@@ -70,6 +72,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
   const [capturedSaved, setCapturedSaved] = useState(false);
   const [demoPassword, setDemoPassword] = useState('x9#mK2$pQ8*vL1@zY4!b');
   const [hasCopiedGen, setHasCopiedGen] = useState(false);
+  const [mcpClientTab, setMcpClientTab] = useState<'claude_desktop' | 'claude_code' | 'cursor'>('claude_desktop');
 
   const DEMO_LOGINS = [
     { username: 'alex.developer@company.com', role: 'Production Dashboard', label: '1 of 3' },
@@ -107,6 +110,13 @@ export const ShowcaseDashboard: React.FC<Props> = ({
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center space-x-1 text-xs text-zinc-400 font-medium">
+            <a
+              href="#agent-bridge"
+              className="px-3 py-1.5 rounded-md hover:text-white hover:bg-zinc-900/60 transition-colors flex items-center gap-1.5"
+            >
+              <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Agent Bridge</span>
+            </a>
             <a
               href="#companion-extension"
               className="px-3 py-1.5 rounded-md hover:text-white hover:bg-zinc-900/60 transition-colors"
@@ -168,6 +178,14 @@ export const ShowcaseDashboard: React.FC<Props> = ({
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-zinc-800/80 bg-[#09090b]/98 backdrop-blur-lg px-4 py-3 space-y-1 animate-fade-in">
+            <a
+              href="#agent-bridge"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 transition-colors"
+            >
+              <Terminal className="w-4 h-4 text-emerald-400" />
+              <span>Agent Bridge (MCP)</span>
+            </a>
             <a
               href="#companion-extension"
               onClick={() => setMobileMenuOpen(false)}
@@ -252,33 +270,6 @@ export const ShowcaseDashboard: React.FC<Props> = ({
               <span>{hasExistingVault ? 'Unlock Password Vault' : 'Launch Password Vault'}</span>
               <ArrowRight className="w-3.5 h-3.5 text-zinc-700" />
             </button>
-
-            <a
-              href="#companion-extension"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800/80 border border-zinc-800 text-zinc-200 font-medium text-xs sm:text-sm transition-colors"
-            >
-              <span>Browser Extension</span>
-            </a>
-
-            <a
-              href="#how-it-works"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800/80 border border-zinc-800 text-zinc-200 font-medium text-xs sm:text-sm transition-colors"
-            >
-              <span>Architecture</span>
-            </a>
-
-            <a
-              href="https://github.com/h4r0015k/Mountain"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800/80 border border-zinc-800 text-zinc-200 font-medium text-xs sm:text-sm transition-colors"
-            >
-              <svg className="w-4 h-4 fill-current text-zinc-300" viewBox="0 0 24 24">
-                <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-              </svg>
-              <span>GitHub</span>
-              <ExternalLink className="w-3 h-3 text-zinc-500" />
-            </a>
           </div>
 
           <div className="text-[11px] font-mono text-zinc-500">
@@ -362,7 +353,228 @@ export const ShowcaseDashboard: React.FC<Props> = ({
         </div>
       </section>
 
-      {/* Companion Extension Showcase Section (Second Section) */}
+      {/* Agent Bridge (MCP) Showcase Section — 2nd Screen */}
+      <section id="agent-bridge" className="py-20 px-4 sm:px-6 border-b border-zinc-800/80 bg-zinc-950/60 relative overflow-hidden">
+        {/* Soft Ambient Glow */}
+        <div className="absolute top-1/3 right-1/4 w-[400px] h-[250px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
+
+        <div className="max-w-5xl mx-auto">
+          {/* Section Header */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-2">
+                <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Local Agent Bridge • Model Context Protocol</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                Credentials for your local tools. <br className="hidden sm:inline" />
+                <span className="text-zinc-400">Without pasting passwords into chats.</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-2xl leading-relaxed">
+                When you run Claude Desktop, Cursor, or local CLI scripts, they often need database logins or API keys to test your code. Instead of copying plaintext secrets into chat prompts or leaving them in git-tracked <span className="font-mono text-zinc-300">.env</span> files, Mountain exposes credentials on demand over MCP.
+              </p>
+            </div>
+
+            <div className="flex sm:flex-col items-start sm:items-end gap-1.5 text-xs font-mono text-zinc-500 shrink-0">
+              <span className="px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-emerald-400 text-[11px] flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                MCP v2024-11-05
+              </span>
+              <span className="text-[11px]">Bearer Token Protected</span>
+            </div>
+          </div>
+
+          {/* Interactive Agent Terminal Simulation */}
+          <div className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-900/40 shadow-2xl overflow-hidden backdrop-blur-xs">
+            {/* Terminal Header Bar */}
+            <div className="px-4 py-3 bg-zinc-950/80 border-b border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 mr-2">
+                  <span className="w-3 h-3 rounded-full bg-rose-500/20 border border-rose-500/40 inline-block" />
+                  <span className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/40 inline-block" />
+                  <span className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/40 inline-block" />
+                </div>
+                <div className="flex items-center gap-2 px-2.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-400">
+                  <Terminal className="w-3 h-3 text-zinc-400" />
+                  <span>terminal — claude / cursor</span>
+                </div>
+              </div>
+              <div className="text-[11px] font-mono text-zinc-500">
+                http://127.0.0.1:27182/sse
+              </div>
+            </div>
+
+            {/* Terminal Content Body */}
+            <div className="p-5 font-mono text-xs sm:text-[13px] leading-relaxed space-y-2.5 bg-zinc-950/70 text-zinc-300">
+              <div className="flex items-center gap-2 text-zinc-100">
+                <span className="text-emerald-400 font-bold">$</span>
+                <span>claude "Run the staging database migration on staging-db.internal"</span>
+              </div>
+              <div className="text-zinc-500 text-xs">
+                Analyzing project dependencies... target requires staging-db credentials.
+              </div>
+              <div className="py-2 px-3 rounded-lg bg-zinc-900/80 border border-zinc-800/80 text-xs space-y-1">
+                <div className="text-emerald-400 flex items-center gap-2">
+                  <span>●</span>
+                  <span className="font-semibold text-zinc-300">Tool:</span>
+                  <span className="text-zinc-200">mcp__mountain__get_credential(&#123; domain: "staging-db.internal" &#125;)</span>
+                </div>
+                <div className="text-zinc-400 text-[11px] pl-4">
+                  ← 200 OK • Decrypted in Mountain browser tab via WebCrypto • User: <span className="text-zinc-200">db_deployer</span>
+                </div>
+              </div>
+              <div className="text-zinc-300 text-xs pt-0.5">
+                Connected to staging-db.internal:5432. Executed 004_add_audit_log.sql... done.
+              </div>
+            </div>
+          </div>
+
+          {/* 3 Grounded Architecture Pillars */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-5 space-y-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <h3 className="text-sm font-semibold text-white">Master Key Stays in Tab</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                The bridge process never touches your 12-word recovery phrase or AES master key. Decryption happens strictly in your browser's WebCrypto engine. The agent only gets the single credential it asked for.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-5 space-y-2">
+              <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                <KeyRound className="w-4 h-4" />
+              </div>
+              <h3 className="text-sm font-semibold text-white">Constant-Time Bearer Auth</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Every session is locked behind a 128-bit CSPRNG token (<span className="font-mono text-zinc-300">mntn_...</span>). Unknown processes or background scripts cannot query your vault without possessing this token.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-5 space-y-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <Zap className="w-4 h-4" />
+              </div>
+              <h3 className="text-sm font-semibold text-white">Auto-Revokes on Tab Close</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                No persistent background daemon holds your passwords. Close the Mountain tab or lock your vault, and the bridge connection and session token are instantly destroyed.
+              </p>
+            </div>
+          </div>
+
+          {/* Client Configuration Card */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 shadow-xl overflow-hidden backdrop-blur-xs">
+            {/* Header with tool tabs */}
+            <div className="px-4 py-3 bg-zinc-950/80 border-b border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-white">Client Configuration</span>
+                <span className="text-xs text-zinc-500">· 2-step setup</span>
+              </div>
+              <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-lg border border-zinc-800 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setMcpClientTab('claude_desktop')}
+                  className={`px-2.5 py-1 rounded-md transition-all font-medium ${
+                    mcpClientTab === 'claude_desktop'
+                      ? 'bg-zinc-800 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  Claude Desktop
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMcpClientTab('claude_code')}
+                  className={`px-2.5 py-1 rounded-md transition-all font-medium ${
+                    mcpClientTab === 'claude_code'
+                      ? 'bg-zinc-800 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  Claude Code CLI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMcpClientTab('cursor')}
+                  className={`px-2.5 py-1 rounded-md transition-all font-medium ${
+                    mcpClientTab === 'cursor'
+                      ? 'bg-zinc-800 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  Cursor
+                </button>
+              </div>
+            </div>
+
+            {/* Steps Body */}
+            <div className="p-5 space-y-4">
+              {/* Step 1 */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-zinc-300">Step 1 — Start the local bridge in your terminal</span>
+                  <span className="text-[11px] text-zinc-500 font-mono">port 27182</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800 font-mono text-xs text-zinc-200">
+                  <span className="text-emerald-400 font-bold">$ <span className="text-zinc-200 font-normal">npm run mcp</span></span>
+                  <span className="text-[11px] text-zinc-500 font-sans">or: node mountain-mcp/index.js</span>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-zinc-300">Step 2 — Connect in Mountain (Settings → Companion) and add config</span>
+                  <span className="text-[11px] text-zinc-500">Bearer Token Auth</span>
+                </div>
+
+                {mcpClientTab === 'claude_desktop' && (
+                  <div className="space-y-1">
+                    <div className="text-[11px] text-zinc-500 font-mono">claude_desktop_config.json:</div>
+                    <pre className="font-mono text-xs text-zinc-300 bg-zinc-950/80 p-3.5 rounded-lg border border-zinc-800 leading-relaxed overflow-x-auto">
+{`{
+  "mcpServers": {
+    "mountain": {
+      "url": "http://127.0.0.1:27182/sse?token=mntn_your_bearer_token"
+    }
+  }
+}`}
+                    </pre>
+                  </div>
+                )}
+
+                {mcpClientTab === 'claude_code' && (
+                  <div className="space-y-1">
+                    <div className="text-[11px] text-zinc-500 font-mono">Run in terminal:</div>
+                    <pre className="font-mono text-xs text-emerald-400 bg-zinc-950/80 p-3.5 rounded-lg border border-zinc-800 leading-relaxed overflow-x-auto select-all">
+claude mcp add mountain "http://127.0.0.1:27182/sse?token=mntn_your_bearer_token"
+                    </pre>
+                  </div>
+                )}
+
+                {mcpClientTab === 'cursor' && (
+                  <div className="space-y-1">
+                    <div className="text-[11px] text-zinc-500 font-mono">.cursor/mcp.json:</div>
+                    <pre className="font-mono text-xs text-zinc-300 bg-zinc-950/80 p-3.5 rounded-lg border border-zinc-800 leading-relaxed overflow-x-auto">
+{`{
+  "mcpServers": {
+    "mountain": {
+      "url": "http://127.0.0.1:27182/sse?token=mntn_your_bearer_token"
+    }
+  }
+}`}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+
+        </div>
+      </section>
+
+      {/* Companion Extension Showcase Section (Third Section) */}
       <section id="companion-extension" className="py-20 px-4 sm:px-6 border-b border-zinc-800/80 bg-zinc-950/40">
         <div className="max-w-5xl mx-auto">
           {/* Section Header */}
@@ -736,7 +948,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
 
               <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
                 <a
-                  href="https://github.com/h4r0015k/Mountain/releases/download/v1.1.0/mountain-companion-extension-v1.1.0.zip"
+                  href="https://github.com/h4r0015k/Mountain/releases/download/v1.2.0/mountain-companion-extension-v1.2.0.zip"
                   target="_blank"
                   rel="noreferrer"
                   className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition-all active:scale-[0.98] shadow-sm"
@@ -1099,7 +1311,7 @@ export const ShowcaseDashboard: React.FC<Props> = ({
           </div>
 
           <div className="pt-6 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-zinc-500 font-mono text-[11px]">
-            <div>Mountain v1.1.0 • Free & Open Source under ISC License</div>
+            <div>Mountain v1.2.0 • Free & Open Source under ISC License</div>
             <div>PBKDF2-HMAC-SHA256 • AES-256-GCM • BIP-39</div>
           </div>
         </div>

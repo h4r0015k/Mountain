@@ -256,7 +256,9 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
       if (event.origin && event.origin !== window.location.origin && event.origin !== 'null') {
         return;
       }
-      if (!event.data || event.data.source !== 'MOUNTAIN_EXTENSION_CONTENT_SCRIPT') {
+      const isExtension = event.data?.source === 'MOUNTAIN_EXTENSION_CONTENT_SCRIPT';
+      const isMcp = event.data?.source === 'MOUNTAIN_MCP_BRIDGE';
+      if (!event.data || (!isExtension && !isMcp)) {
         return;
       }
 
@@ -443,6 +445,137 @@ export function useCompanionBridge(arg: DecryptedRecord[] | CompanionBridgeOptio
               domain: targetDomain,
               unlocked: true,
               logins: matchingLogins,
+            },
+            targetOrigin
+          );
+          break;
+        }
+
+        case 'GET_ALL_ITEMS': {
+          // MCP tool: list_domains — returns titles and domains only (NO passwords)
+          if (isExtension && (!sessionTokenRef.current || token !== sessionTokenRef.current)) {
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'ALL_ITEMS_RESPONSE',
+                requestId,
+                error: 'UNAUTHORIZED_NOT_PAIRED',
+                items: [],
+              },
+              targetOrigin
+            );
+            break;
+          }
+
+          if (!isUnlockedRef.current) {
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'ALL_ITEMS_RESPONSE',
+                requestId,
+                unlocked: false,
+                error: 'VAULT_LOCKED',
+                items: [],
+              },
+              targetOrigin
+            );
+            break;
+          }
+
+          // Return only metadata — no secrets, no passwords
+          const allItems = itemsRef.current
+            .filter((rec) => (rec.item.type || '').toUpperCase() === 'LOGIN')
+            .map((rec) => ({
+              id: rec.item.id,
+              title: rec.item.title || '',
+              domain: normalizeDomain(rec.secret?.url || (rec.item as any)?.url || ''),
+              hasTotp: !!rec.secret?.totpSecret,
+              type: rec.item.type,
+            }));
+
+          window.postMessage(
+            {
+              source: 'MOUNTAIN_SPA',
+              type: 'ALL_ITEMS_RESPONSE',
+              requestId,
+              unlocked: true,
+              items: allItems,
+            },
+            targetOrigin
+          );
+          break;
+        }
+
+        case 'GET_CREDENTIAL': {
+          // MCP tool: get_credential — returns username + password for ONE matched domain
+          if (isExtension && (!sessionTokenRef.current || token !== sessionTokenRef.current)) {
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'CREDENTIAL_RESPONSE',
+                requestId,
+                error: 'UNAUTHORIZED_NOT_PAIRED',
+              },
+              targetOrigin
+            );
+            break;
+          }
+
+          const credDomain = normalizeDomain(domain || '');
+
+          if (!isUnlockedRef.current) {
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'CREDENTIAL_RESPONSE',
+                requestId,
+                unlocked: false,
+                error: 'VAULT_LOCKED',
+              },
+              targetOrigin
+            );
+            break;
+          }
+
+          if (!credDomain) {
+            window.postMessage(
+              {
+                source: 'MOUNTAIN_SPA',
+                type: 'CREDENTIAL_RESPONSE',
+                requestId,
+                unlocked: true,
+                error: 'MISSING_DOMAIN',
+              },
+              targetOrigin
+            );
+            break;
+          }
+
+          // Return only the first matching credential for the domain
+          const matched = itemsRef.current
+            .filter((rec) => (rec.item.type || '').toUpperCase() === 'LOGIN')
+            .find((rec) =>
+              matchesDomainOrTitle(
+                rec.secret?.url || (rec.item as any)?.url || '',
+                rec.item.title || '',
+                credDomain
+              )
+            );
+
+          window.postMessage(
+            {
+              source: 'MOUNTAIN_SPA',
+              type: 'CREDENTIAL_RESPONSE',
+              requestId,
+              unlocked: true,
+              credential: matched
+                ? {
+                    title: matched.item.title || '',
+                    username: matched.secret?.username || '',
+                    password: matched.secret?.password || '',
+                    url: matched.secret?.url || '',
+                  }
+                : null,
             },
             targetOrigin
           );

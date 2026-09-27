@@ -1,0 +1,21 @@
+{
+  "name": "mountain-mcp",
+  "version": "1.2.0",
+  "description": "MCP bridge server for Mountain password manager — exposes vault credentials to developer tools and clients via Model Context Protocol",
+  "type": "module",
+  "bin": {
+    "mountain-mcp": "./index.js"
+  },
+  "main": "./index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["mcp", "password-manager", "mountain", "model-context-protocol", "claude", "cursor"],
+  "license": "ISC"
+}

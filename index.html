@@ -135,22 +135,103 @@
       ]
     }
     </script>
+    <style>
+      .splash-container {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #09090b;
+        color: #f4f4f5;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        z-index: 50;
+      }
+      .splash-icon {
+        width: 68px;
+        height: 68px;
+        margin-bottom: 1.25rem;
+        animation: splash-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      .splash-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        color: #ffffff;
+        margin-bottom: 0.35rem;
+      }
+      .splash-tagline {
+        font-size: 0.72rem;
+        color: #71717a;
+        letter-spacing: 0.08em;
+        margin-bottom: 1.5rem;
+      }
+      .splash-bar {
+        width: 120px;
+        height: 2px;
+        background: #27272a;
+        border-radius: 9999px;
+        overflow: hidden;
+        position: relative;
+      }
+      .splash-bar::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 40%;
+        background: #10b981;
+        border-radius: 9999px;
+        animation: splash-bar-anim 1.4s ease-in-out infinite;
+      }
+      @keyframes splash-pulse {
+        0%, 100% { transform: scale(1); opacity: 0.9; }
+        50% { transform: scale(1.06); opacity: 1; filter: drop-shadow(0 0 14px rgba(16, 185, 129, 0.45)); }
+      }
+      @keyframes splash-bar-anim {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(300%); }
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+      }
+    </style>
   </head>
   <body class="bg-[#09090b] text-zinc-100 min-h-screen antialiased selection:bg-zinc-800 selection:text-white">
     <div id="root">
-      <!-- Semantic Crawlable Fallback for Search Engines and Initial Paint -->
-      <header style="padding: 2.5rem 1.5rem 1.5rem; max-width: 760px; margin: 0 auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
-        <h1 style="font-size: 1.5rem; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem; letter-spacing: -0.02em;">
-          Mountain — Free, Local-First & Zero-Knowledge Password Manager
-        </h1>
-        <p style="font-size: 0.95rem; color: #a1a1aa; line-height: 1.6; margin-bottom: 1.5rem;">
+      <!-- Native Splash Screen for Human Visitors -->
+      <div class="splash-container" id="splash-screen">
+        <svg class="splash-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5 L12 17.5" opacity="0.45" />
+          <path d="M16.5 13.5 L21 8.5 L29 25 H22" />
+          <path d="M10.2 25 H3 L12 5 L22 25 H13.8 L13.2 21.2 A 1.8 1.8 0 1 0 10.8 21.2 L10.2 25 Z" />
+        </svg>
+        <div class="splash-title">MOUNTAIN</div>
+        <div class="splash-tagline">ZERO-KNOWLEDGE VAULT</div>
+        <div class="splash-bar"></div>
+      </div>
+
+      <!-- Semantic Crawlable Fallback for Search Engines and Screen Readers -->
+      <header class="sr-only">
+        <h1>Mountain — Free, Local-First &amp; Zero-Knowledge Password Manager</h1>
+        <p>
           A free, open-source password manager running entirely client-side in your browser. All credentials are encrypted with AES-256-GCM and protected by a 12-word BIP-39 recovery phrase. Zero cloud servers, zero tracking, zero accounts.
         </p>
       </header>
-      <main style="padding: 0 1.5rem 2.5rem; max-width: 760px; margin: 0 auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.88rem; color: #d4d4d8; line-height: 1.7;">
-        <section style="margin-bottom: 2rem;">
-          <h2 style="font-size: 1.1rem; font-weight: 600; color: #34d399; margin-bottom: 0.75rem;">// CORE ARCHITECTURE</h2>
-          <ul style="list-style: square; padding-left: 1.25rem; space-y: 0.5rem;">
+      <main class="sr-only">
+        <section>
+          <h2>Core Architecture</h2>
+          <ul>
             <li><strong>Deterministic Master Identity:</strong> Standardized 12-word BIP-39 mnemonic phrase acts as the root master key.</li>
             <li><strong>Client-Side Authenticated Encryption:</strong> AES-256-GCM with unique 12-byte IVs per credential entry.</li>
             <li><strong>Key Derivation:</strong> PBKDF2-HMAC-SHA256 with 600,000 iterations for master keys and 100,000 for local PIN envelopes.</li>
@@ -161,9 +242,9 @@
           </ul>
         </section>
         <section>
-          <h2 style="font-size: 1.1rem; font-weight: 600; color: #34d399; margin-bottom: 0.75rem;">// FREQUENTLY ASKED QUESTIONS</h2>
+          <h2>Frequently Asked Questions</h2>
           <p><strong>Where are my passwords stored?</strong> Exclusively in your local device's browser IndexedDB storage unless you explicitly choose to backup encrypted ciphertext to your personal Google Drive.</p>
-          <p style="margin-top: 0.75rem;"><strong>Can the creator or Google read my passwords?</strong> No. Decryption occurs solely inside window.crypto.subtle in your browser tab using keys derived from your 12-word paper phrase.</p>
+          <p><strong>Can the creator or Google read my passwords?</strong> No. Decryption occurs solely inside window.crypto.subtle in your browser tab using keys derived from your 12-word paper phrase.</p>
         </section>
       </main>
     </div>

@@ -11,72 +11,162 @@
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="./sitemap.xml" />
+    <link rel="alternate" type="text/plain" href="./llms.txt" title="LLM-readable summary" />
+    <link rel="ard" href="./.well-known/ard.json" />
 
     <!-- Primary Meta Tags -->
-    <title>Mountain — Local-First, Zero-Knowledge Password Manager</title>
-    <meta name="title" content="Mountain — Local-First, Zero-Knowledge Password Manager" />
-    <meta name="description" content="Mountain is a free, open-source password manager that encrypts everything on your device. No servers, no accounts, no tracking. AES-256-GCM encryption with a 12-word paper key you control." />
-    <meta name="keywords" content="password manager, local-first, zero-knowledge, open source, AES-256-GCM, BIP-39, offline, encrypted, privacy, free, no cloud, client-side encryption" />
-    <meta name="author" content="h4r0015k" />
+    <title>Mountain — Free, Local-First & Zero-Knowledge Password Manager</title>
+    <meta name="title" content="Mountain — Free, Local-First & Zero-Knowledge Password Manager" />
+    <meta name="description" content="Mountain is a free, open-source, local-first password manager. Encrypted client-side in your browser using AES-256-GCM and a 12-word BIP-39 recovery key. Zero cloud servers, zero tracking." />
+    <meta name="keywords" content="local first password manager, zero knowledge password manager, open source password manager, BIP-39 password manager, AES-256-GCM, offline password manager, client side encryption, free password manager, self-custody password vault" />
+    <meta name="author" content="Nikhil Sahani" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#09090b" />
 
-    <!-- Open Graph / Facebook -->
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://nikhilsahani.com/Mountain/" />
+
+    <!-- Open Graph / Facebook / LinkedIn -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://h4r0015k.github.io/Mountain/" />
-    <meta property="og:title" content="Mountain — Local-First, Zero-Knowledge Password Manager" />
-    <meta property="og:description" content="Your passwords never leave your device. Free, open-source, AES-256-GCM encrypted password manager with a 12-word paper key. No accounts, no servers." />
-    <meta property="og:image" content="https://h4r0015k.github.io/Mountain/icon-512.png" />
-    <meta property="og:image:width" content="512" />
-    <meta property="og:image:height" content="512" />
+    <meta property="og:url" content="https://nikhilsahani.com/Mountain/" />
+    <meta property="og:title" content="Mountain — Free, Local-First & Zero-Knowledge Password Manager" />
+    <meta property="og:description" content="Your passwords never leave your device. AES-256-GCM authenticated encryption with a 12-word paper key. Zero accounts, zero cloud servers." />
+    <meta property="og:image" content="https://nikhilsahani.com/Mountain/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Mountain - Local-First, Zero-Knowledge Password Manager" />
     <meta property="og:site_name" content="Mountain" />
     <meta property="og:locale" content="en_US" />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary" />
-    <meta property="twitter:url" content="https://h4r0015k.github.io/Mountain/" />
-    <meta property="twitter:title" content="Mountain — Local-First Password Manager" />
-    <meta property="twitter:description" content="Your passwords never leave your device. Free, open-source, AES-256-GCM encrypted. No accounts, no servers, no tracking." />
-    <meta property="twitter:image" content="https://h4r0015k.github.io/Mountain/icon-512.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://nikhilsahani.com/Mountain/" />
+    <meta name="twitter:title" content="Mountain — Free, Local-First & Zero-Knowledge Password Manager" />
+    <meta name="twitter:description" content="Your passwords never leave your device. AES-256-GCM authenticated encryption with a 12-word paper key. Zero accounts, zero cloud servers." />
+    <meta name="twitter:image" content="https://nikhilsahani.com/Mountain/og-image.png" />
 
-    <!-- PWA & Mobile -->
+    <!-- PWA & Mobile Web App -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Mountain" />
     <meta name="application-name" content="Mountain" />
 
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://h4r0015k.github.io/Mountain/" />
-
-    <!-- Structured Data (JSON-LD) -->
+    <!-- Structured Data (JSON-LD: SoftwareApplication + FAQPage) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "Mountain",
-      "description": "A free, open-source, local-first password manager. AES-256-GCM encrypted, zero-knowledge, with a 12-word BIP-39 paper key. No servers, no accounts.",
-      "url": "https://h4r0015k.github.io/Mountain/",
-      "applicationCategory": "SecurityApplication",
-      "operatingSystem": "Web Browser",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "author": {
-        "@type": "Person",
-        "name": "h4r0015k",
-        "url": "https://github.com/h4r0015k"
-      },
-      "license": "https://github.com/h4r0015k/Mountain/blob/main/LICENSE",
-      "isAccessibleForFree": true,
-      "softwareVersion": "1.2.0",
-      "screenshot": "https://h4r0015k.github.io/Mountain/icon-512.png"
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://nikhilsahani.com/Mountain/#software",
+          "name": "Mountain",
+          "description": "A free, open-source, local-first password manager. AES-256-GCM encrypted, zero-knowledge, with a 12-word BIP-39 paper key. Zero cloud servers, zero accounts, zero tracking.",
+          "url": "https://nikhilsahani.com/Mountain/",
+          "image": "https://nikhilsahani.com/Mountain/og-image.png",
+          "applicationCategory": "SecurityApplication",
+          "operatingSystem": "All modern web browsers (Chrome, Edge, Firefox, Brave, Safari)",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "author": {
+            "@type": "Person",
+            "@id": "https://nikhilsahani.com/#person",
+            "name": "Nikhil Sahani",
+            "url": "https://nikhilsahani.com/"
+          },
+          "license": "https://github.com/h4r0015k/Mountain/blob/main/LICENSE",
+          "isAccessibleForFree": true,
+          "softwareVersion": "1.2.0",
+          "screenshot": "https://nikhilsahani.com/Mountain/og-image.png",
+          "featureList": [
+            "Local-first browser IndexedDB storage",
+            "Deterministic 12-word BIP-39 master recovery key",
+            "AES-256-GCM authenticated encryption with unique 12-byte IVs",
+            "PBKDF2-HMAC-SHA256 derivation (600,000 iterations for root, 100,000 for PIN envelope)",
+            "Optional Google Drive appDataFolder backup via client-side OAuth 2.0 PKCE",
+            "Model Context Protocol (MCP) local developer agent bridge",
+            "Manifest V3 companion browser extension for autofill",
+            "Client-side vault import from Bitwarden, 1Password, Chrome, Apple Passwords, LastPass",
+            "Inactivity auto-lock and 30-second clipboard wipe"
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://nikhilsahani.com/Mountain/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "How does Mountain differ from cloud-based password managers?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Traditional password managers store encrypted vault blobs on corporate cloud databases. Mountain completely eliminates the intermediary server: encryption, decryption, and storage occur entirely on your local device inside your browser's IndexedDB. No company server ever touches your ciphertext or keys."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What encryption standard does Mountain use?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Mountain uses AES-256-GCM authenticated encryption with a unique 12-byte initialization vector (IV) for every vault record. Master keys are derived from a standardized 12-word BIP-39 mnemonic phrase using PBKDF2-HMAC-SHA256 with 600,000 iterations."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I sync passwords across multiple devices?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Mountain supports user-owned cloud backups directly to your personal Google Drive appDataFolder via client-side OAuth 2.0 PKCE. Only encrypted ciphertext is uploaded, and no company servers have access."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is Mountain free and open-source?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes, Mountain is 100% free and open-source under the MIT license with zero analytics, tracking scripts, or telemetry."
+              }
+            }
+          ]
+        }
+      ]
     }
     </script>
   </head>
   <body class="bg-[#09090b] text-zinc-100 min-h-screen antialiased selection:bg-zinc-800 selection:text-white">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Semantic Crawlable Fallback for Search Engines and Initial Paint -->
+      <header style="padding: 2.5rem 1.5rem 1.5rem; max-width: 760px; margin: 0 auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+        <h1 style="font-size: 1.5rem; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem; letter-spacing: -0.02em;">
+          Mountain — Free, Local-First & Zero-Knowledge Password Manager
+        </h1>
+        <p style="font-size: 0.95rem; color: #a1a1aa; line-height: 1.6; margin-bottom: 1.5rem;">
+          A free, open-source password manager running entirely client-side in your browser. All credentials are encrypted with AES-256-GCM and protected by a 12-word BIP-39 recovery phrase. Zero cloud servers, zero tracking, zero accounts.
+        </p>
+      </header>
+      <main style="padding: 0 1.5rem 2.5rem; max-width: 760px; margin: 0 auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.88rem; color: #d4d4d8; line-height: 1.7;">
+        <section style="margin-bottom: 2rem;">
+          <h2 style="font-size: 1.1rem; font-weight: 600; color: #34d399; margin-bottom: 0.75rem;">// CORE ARCHITECTURE</h2>
+          <ul style="list-style: square; padding-left: 1.25rem; space-y: 0.5rem;">
+            <li><strong>Deterministic Master Identity:</strong> Standardized 12-word BIP-39 mnemonic phrase acts as the root master key.</li>
+            <li><strong>Client-Side Authenticated Encryption:</strong> AES-256-GCM with unique 12-byte IVs per credential entry.</li>
+            <li><strong>Key Derivation:</strong> PBKDF2-HMAC-SHA256 with 600,000 iterations for master keys and 100,000 for local PIN envelopes.</li>
+            <li><strong>Local Vault Storage:</strong> Persisted in browser IndexedDB with an integrity check canary. Zero external databases.</li>
+            <li><strong>User-Owned Sync:</strong> Optional direct client-side backup to your personal Google Drive (appDataFolder) via OAuth 2.0 PKCE.</li>
+            <li><strong>Local Agent Bridge (MCP):</strong> Model Context Protocol bridge on 127.0.0.1 for local developer tools (Claude Desktop, Cursor).</li>
+            <li><strong>Client-Side Vault Migration:</strong> One-click import from Bitwarden, 1Password, Chrome, Apple Passwords, and LastPass.</li>
+          </ul>
+        </section>
+        <section>
+          <h2 style="font-size: 1.1rem; font-weight: 600; color: #34d399; margin-bottom: 0.75rem;">// FREQUENTLY ASKED QUESTIONS</h2>
+          <p><strong>Where are my passwords stored?</strong> Exclusively in your local device's browser IndexedDB storage unless you explicitly choose to backup encrypted ciphertext to your personal Google Drive.</p>
+          <p style="margin-top: 0.75rem;"><strong>Can the creator or Google read my passwords?</strong> No. Decryption occurs solely inside window.crypto.subtle in your browser tab using keys derived from your 12-word paper phrase.</p>
+        </section>
+      </main>
+    </div>
     <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>

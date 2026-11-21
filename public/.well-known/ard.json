@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ards-project/ard-spec/main/spec/schemas/ard-manifest.schema.json",
+  "specVersion": "0.91",
+  "host": {
+    "displayName": "Mountain Password Manager",
+    "identifier": "nikhilsahani.com"
+  },
+  "entries": []
+}

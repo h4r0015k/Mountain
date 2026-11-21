@@ -1,0 +1,16 @@
+# Mountain
+
+> A free, local-first, zero-knowledge open-source password manager running entirely client-side with AES-256-GCM, BIP-39 recovery keys, optional Google Drive sync, and an MCP developer bridge.
+
+## Core Resources
+- [Live Web Application](https://nikhilsahani.com/Mountain/): Zero-install client-side password vault.
+- [GitHub Repository](https://github.com/h4r0015k/Mountain): Complete open-source source code, architecture, and extension.
+- [Architecture Guide](https://dev.to/h4r0015k/building-a-free-open-source-password-manager-1ol8): Deep dive into Mountain's cryptographic primitives and local-first storage design.
+
+## Technical Specifications
+- Cryptographic Primitive: AES-256-GCM with a unique 12-byte initialization vector (IV) per record.
+- Key Derivation: PBKDF2-HMAC-SHA256 (600,000 iterations for root identity, 100,000 for local PIN envelope).
+- Master Identity: Deterministic 12-word BIP-39 mnemonic phrase.
+- Vault Storage: Browser IndexedDB with integrity check canary. Zero external company database dependencies.
+- Cloud Backup: Optional direct REST API sync to personal Google Drive (appDataFolder) via client-side OAuth 2.0 PKCE.
+- Local Agent Bridge: Model Context Protocol (MCP) HTTP/SSE bridge bound to 127.0.0.1 with 128-bit Bearer token authentication.
